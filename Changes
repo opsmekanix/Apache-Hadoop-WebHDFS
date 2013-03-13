@@ -1,0 +1,9 @@
+Revision history for Apache-Hadoop-WebHDFS
+
+0.01    March 12, 2013 - 
+        First version, released on an unsuspecting world. Note this is not 
+        the full WebHDFS api as I needed something to write files to a secure 
+        hadoop cluster using GSSAPI for authentication.   Current state is one
+        can read & write files/directories to HDFS.  One can also get a delegation
+        token.  See POD for further information on implemented methods.
+
