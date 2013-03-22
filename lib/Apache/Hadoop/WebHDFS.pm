@@ -4,7 +4,7 @@ our $VERSION = "0.01";
 use warnings;
 use strict;
 use lib '.';
-use base 'WWW::Mechanize';
+use parent 'WWW::Mechanize';
 require Carp;
 
 # ###################
@@ -22,6 +22,16 @@ sub redirect_ok {
     # redirect_ok is part of LWP::UserAgent which is subclassed 
     # by WWW:Mech and finally Apache::Hadoop::WebHDFS. And down the rabbit hole we go ...
     return 1;    # always return true.
+}
+
+sub new {
+    my $class = shift;
+	my $namenode = $_[0]->{namenode};
+	my $namenodeport=$_[0]->{namenodeport};
+    my $self = $class-> SUPER::new();
+	$self->{'namenode'} = $namenode;
+	$self->{'namenodeport'} = $namenodeport;
+	return $self;
 }
 
 sub getdelegationtoken {
@@ -121,6 +131,7 @@ sub rename {
     $self->put( $url );
 }
 
+
 =pod
 
 =head1 NAME
@@ -175,7 +186,8 @@ Carp                   is used for various warnings and errors.
 WWW::Mechanize         is needed as this is a subclass.
 LWP::Debug             is required for debugging GSSAPI connections
 LWP::Authen::Negotiate is the magic sauce for working with secure hadoop clusters 
-parent                 included with Perl 5.10.1 and newer
+parent                 included with Perl 5.10.1 and newer or found on CPAN 
+                       for older versions of perl
 
 =head1 AUTHOR
 
