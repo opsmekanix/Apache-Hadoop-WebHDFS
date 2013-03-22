@@ -133,13 +133,15 @@ Version 0.01
 
 =head1 SYNOPSIS
 
-Hadoop's WebHDFS API, is a rest interface to HDFS.  This module provides a perl interface 
-the API, allowing one to both read and write files to HDFS.  Because Apache::Hadoop::WebHDFS 
-supports GSSAPI, it can be used to interface with unsecure and secure Hadoop Clusters.
+Hadoop's WebHDFS API, is a rest interface to HDFS.  This module provides 
+a perl interface to the API, allowing one to both read and write files to 
+HDFS.  Because Apache::Hadoop::WebHDFS supports GSSAPI, it can be used to 
+interface with unsecure and secure Hadoop Clusters.
 
-Apache::Hadoop::WebHDFS is a subclass of WWW:Mechanize, so one could reference WWW::Mechanize 
-methods if needed.  One will note that WWW::Mechanize is a subclass of LWP, meaning it's 
-possible to also reference LWP methods from Apache::Hadoop::WebHDFS.
+Apache::Hadoop::WebHDFS is a subclass of WWW:Mechanize, so one could 
+reference WWW::Mechanize methods if needed.  One will note that 
+WWW::Mechanize is a subclass of LWP, meaning it's possible to also reference 
+LWP methods from Apache::Hadoop::WebHDFS.
 
 =head1 METHODS
 
@@ -172,7 +174,7 @@ To see GSSAPI calls during the request, enable LWP::Debug by adding
 Carp                   is used for various warnings and errors.
 WWW::Mechanize         is needed as this is a subclass.
 LWP::Debug             is required for debugging GSSAPI connections
-LWP::Authen::Negotiate is the magic sauce for working with secure hadoop clusters
+LWP::Authen::Negotiate is the magic sauce for working with secure hadoop clusters 
 parent                 included with Perl 5.10.1 and newer
 
 =head1 AUTHOR
@@ -212,7 +214,10 @@ L<http://search.cpan.org/dist/Apache-Hadoop-WebHDFS/>
 
 =head1 ACKNOWLEDGEMENTS
 
-I would like to acknowledge Andy Lester plus the numerous people who have worked on WWW::Mechanize, Anchim Grolms and team for providing LWP::Authen::Negotiate, and the contributors to LWP.  Thanks for providing awesome modules.
+I would like to acknowledge Andy Lester plus the numerous people who have 
+worked on WWW::Mechanize, Anchim Grolms and team for providing 
+LWP::Authen::Negotiate, and the contributors to LWP.  Thanks for providing 
+awesome modules.
 
 =head1 LICENSE AND COPYRIGHT
 
