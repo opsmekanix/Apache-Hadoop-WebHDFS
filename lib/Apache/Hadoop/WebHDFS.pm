@@ -20,26 +20,34 @@ require Carp;
 sub redirect_ok {
     # need to allow 'put' to follow redirect on 307 requests, per RFC 2616 section 10.3.8
     # redirect_ok is part of LWP::UserAgent which is subclassed 
-    # by WWW:Mech and finally Apache::Hadoop::WebHDFS. And down the rabbit hole we go ...
+    # by WWW:Mech and finally Apache::Hadoop::WebHDFS. 
     return 1;    # always return true.
 }
 
+
 sub new {
+	# Create new WebHDFS object
     my $class = shift;
-	my $namenode = $_[0]->{namenode};
-	my $namenodeport=$_[0]->{namenodeport};
+	my $namenode =  'localhost';
+	my $namenodeport= 50070;
+	if ($_[0]->{'namenode'}) { $namenode =  $_[0]->{'namenode'}; }
+	if ($_[0]->{'namenodeport'}) { $namenodeport =  $_[0]->{'namenodeport'}; }
     my $self = $class-> SUPER::new();
 	$self->{'namenode'} = $namenode;
 	$self->{'namenodeport'} = $namenodeport;
 	return $self;
 }
 
+# TODO add other supported authentication methods
+#      proxy user and non-gssapi unsecure grids
+
+# TODO add renew delegation token method
+
 sub getdelegationtoken {
-    # curl -i "http://<HOST>:<PORT>/webhdfs/v1/?op=GETDELEGATIONTOKEN&renewer=<USER>"
     # Fetch delegation token and store in object
-    my ( $self, $nn, $user) = @_; 
+    my ( $self, $user) = @_; 
     my $token = '';
-    my $url = 'http://' . $nn . ':50070/webhdfs/v1/?op=GETDELEGATIONTOKEN&renewer=' . $user;
+	my $url = 'http://' . $self->{'namenode'} . ':' . $self->{'namenodeport'} . '/webhdfs/v1/?op=GETDELEGATIONTOKEN&renewer=' . $user;
     $self->get( $url );
     if ( $self->success() ) { 
        $token = substr ($self->content(), 23 , -3);
@@ -49,10 +57,10 @@ sub getdelegationtoken {
 }
 
 sub canceldelegationtoken {
-    # curl -i -X PUT "http://<HOST>:<PORT>/webhdfs/v1/?op=CANCELDELEGATIONTOKEN&token=<TOKEN>"
-    my ( $self, $nn ) = @_; 
+    # Tell namenode to cancel existing delegation token and remove token from object
+    my ( $self ) = @_; 
     if ( $self->{'webhdfstoken'} )  {
-       my $url = 'http://' . $nn . ':50070/webhdfs/v1/?op=CANCELDELEGATION&token=' . $self->{'webhdfstoken'};
+	   my $url = 'http://' . $self->{'namenode'} . ':' . $self->{'namenodeport'} . '/webhdfs/v1/?op=CANCELDELEGATION&token=' . $self->{'webhdfstoken'};
        $self->get( $url );
        delete $self->{'webhdfstoken'} 
     } 
@@ -60,8 +68,8 @@ sub canceldelegationtoken {
 }
 
 sub Open {
-    my ( $self, $nn, $file ) = @_;
-    my $url = 'http://' . $nn . ':50070/webhdfs/v1' . $file . '?op=OPEN';
+    my ( $self, $file ) = @_;
+	my $url = 'http://' . $self->{'namenode'} . ':' . $self->{'namenodeport'} .  '/webhdfs/v1' . $file . '?op=OPEN';
     if ( $self->{'webhdfstoken'} ) {
         $url = $url . "&delegation=" . $self->{'webhdfstoken'};
     }
@@ -70,8 +78,8 @@ sub Open {
 }
 
 sub getfilestatus {
-    my ( $self, $nn, $file ) = @_;
-    my $url = 'http://' . $nn . ':50070/webhdfs/v1' . $file . '?op=GETFILESTATUS';
+    my ( $self, $file ) = @_;
+	my $url = 'http://' . $self->{'namenode'} . ':' . $self->{'namenodeport'} .  '/webhdfs/v1' . $file . '?op=GETFILESTATUS';
     if ( $self->{'webhdfstoken'} ) {
         $url = $url . "&delegation=" . $self->{'webhdfstoken'};
     }
@@ -79,10 +87,13 @@ sub getfilestatus {
     return $self;
 }
 
+# TODO need delete method and specify if it's recursive or not
+
 sub create {
-    my ( $self, $nn, $file_src, $file_dest, $perms ) = @_;
+	# TODO need to add overwrite, blocksize, replication, and buffersize options
+    my ( $self, $file_src, $file_dest, $perms ) = @_;
     if ( !$perms ) { $perms = '000'; }
-    my $url = 'http://' . $nn . ':50070/webhdfs/v1' . $file_dest . '?op=CREATE&permission=' . $perms . '&overwrite=false';
+	my $url = 'http://' . $self->{'namenode'} . ':' . $self->{'namenodeport'} .  ':50070/webhdfs/v1' . $file_dest . '?op=CREATE&permission=' . $perms . '&overwrite=false';
     if ( $self->{'webhdfstoken'} ) {
         $url = $url . "&delegation=" . $self->{'webhdfstoken'};
     }
@@ -98,11 +109,12 @@ sub create {
     return $self;
 }
 
+# TODO need to add 'append' method  - for people wanting to corrupt hdfs. :)
+
 sub mkdirs {
-    # curl -i -X PUT "http://<HOST>:<PORT>/<PATH>?op=MKDIRS[&permission=<OCTAL>]"
-    my ( $self, $nn, $file, $perms ) = @_;
+    my ( $self, $file, $perms ) = @_;
     if ( !$perms ) { $perms = '000'; }
-    my $url = 'http://' . $nn . ':50070/webhdfs/v1' . $file . '?op=MKDIRS&permission=' . $perms;
+	my $url = 'http://' . $self->{'namenode'} . ':' . $self->{'namenodeport'} .  '/webhdfs/v1' . $file . '?op=MKDIRS&permission=' . $perms;
     if ( $self->{'webhdfstoken'} ) {
         $url = $url . "&delegation=" . $self->{'webhdfstoken'};
     }
@@ -110,10 +122,19 @@ sub mkdirs {
     return $self;
 }
 
+# TODO add a content summary method
+# TODO add a get file checksum method
+# TODO add a get home directory method
+# TODO add a set permission  method for existing files
+# TODO add a set owner  method for existing files
+# TODO add a set replication  method for existing files
+# TODO add a set atime or mtime  method for existing files
+# TODO add hashmap for errors and method of returning them - maybe?
+
 sub liststatus {
     # list contents of directory
-    my ( $self, $nn, $file ) = @_;
-    my $url = 'http://' . $nn . ':50070/webhdfs/v1' . $file . '?op=LISTSTATUS&recrusive=true';
+    my ( $self, $file ) = @_;
+	my $url = 'http://' . $self->{'namenode'} . ':' . $self->{'namenodeport'} . '/webhdfs/v1' . $file . '?op=LISTSTATUS&recrusive=true';
     if ( $self->{'webhdfstoken'} ) {
         $url = $url . "&delegation=" . $self->{'webhdfstoken'};
     }
@@ -122,9 +143,8 @@ sub liststatus {
 }
 
 sub rename {
-    # curl -i -X PUT "<HOST>:<PORT>/webhdfs/v1/<PATH>?op=RENAME&destination=<PATH>"
-    my ( $self, $nn, $src, $dst ) = @_;
-    my $url = 'http://' . $nn . ':50070/webhdfs/v1' . $src . '?op=RENAME&destination=' . $dst;
+    my ( $self, $src, $dst ) = @_;
+	my $url = 'http://' . $self->{'namenode'} . ':' . $self->{'namenodeport'} . '/webhdfs/v1' . $src . '?op=RENAME&destination=' . $dst;
     if ( $self->{'webhdfstoken'} ) {
         $url = $url . "&delegation=" . $self->{'webhdfstoken'};
     }
@@ -156,7 +176,7 @@ LWP methods from Apache::Hadoop::WebHDFS.
 
 =head1 METHODS
 
-=head2 new()                   - creates a new WebHDFS object
+=head2 new()                   - creates a new WebHDFS object.  Takes an anonomous hash with namenode and namenode port as keys. If not specified defaults to localhost and 50070.
 
 =head2 getdelegationtoken()    - gets a delegation token from the namenode. 
 
@@ -170,7 +190,7 @@ LWP methods from Apache::Hadoop::WebHDFS.
 
 =head2 getfilestatus()         - returns a json structure containing status of file or directory
 
-=head2 liststatus()            - returns a json structure of contents inside a directory
+=head2 liststatus()            - returns a json structure of contents inside a directory 
 
 =head2 mkdirs()                - creates a directory on HDFS
 
@@ -189,6 +209,24 @@ LWP::Authen::Negotiate is the magic sauce for working with secure hadoop cluster
 parent                 included with Perl 5.10.1 and newer or found on CPAN 
                        for older versions of perl
 
+=head1 EXAMPLES
+
+=head2 list a HDFS directory on a secure hadop cluster
+
+  #!/bin/perl
+  use Data::Dumper;
+  use Authen::Krb5::Effortless;  # <-- to get TGT from kerberos
+  use Apache::Hadoop::WebHDFS;
+  my $username=getlogin();
+  my $krb5=Authen::Krb5::Effortless->new();
+  $krb5->fetch_TGT_PW('s3kr3+', $username);
+  my $hdfsclient = Apache::Hadoop::WebHDFS->new( {namenode       =>"mynamenode.example.com",
+                                                  mynamenodeport =>50070}
+											   );
+  $hdfsclient->liststatus("/tmp");        
+  print Dumper $content  if ( $hdfsclient->success() ) ;     
+
+	  
 =head1 AUTHOR
 
 Adam Faris, C<< <apache-hadoop-webhdfs at mekanix.org> >>
