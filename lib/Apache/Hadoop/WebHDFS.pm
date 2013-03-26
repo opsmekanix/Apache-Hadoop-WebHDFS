@@ -39,9 +39,11 @@ sub new {
 }
 
 # TODO add other supported authentication methods
-#      proxy user and non-gssapi unsecure grids
-
+#      proxy user and non-gssapi unsecure grids 
 # TODO add renew delegation token method
+
+# curl -i "http://<HOST>:<PORT>/webhdfs/v1/<PATH>?[user.name=<USER>&]op=..." or 
+# curl -i "http://<HOST>:<PORT>/webhdfs/v1/<PATH>?[user.name=<USER>&]doas=<USER>&op=..."
 
 sub getdelegationtoken {
     # Fetch delegation token and store in object
