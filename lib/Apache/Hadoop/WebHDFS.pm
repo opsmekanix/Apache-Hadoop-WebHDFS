@@ -25,6 +25,8 @@ sub redirect_ok {
 }
 
 
+# TODO - need to add check in new for authmethod = 'pseudo, gssapi, or doas'
+
 sub new {
 	# Create new WebHDFS object
     my $class = shift;
@@ -53,6 +55,7 @@ sub new {
 
 # TODO add other supported authentication methods
 #      proxy user and non-gssapi unsecure grids 
+#      note: 'pseudo' non-gssapi method added.   still need to tst proxy user
 
 # curl -i "http://<HOST>:<PORT>/webhdfs/v1/<PATH>?[user.name=<USER>&]op=..." or 
 # curl -i "http://<HOST>:<PORT>/webhdfs/v1/<PATH>?[user.name=<USER>&]doas=<USER>&op=..."
@@ -114,13 +117,13 @@ sub Open {
     my $url;
 	if ($self->{'authmethod'} eq 'gssapi') { 
        $url = 'http://' . $self->{'namenode'} . ':' . $self->{'namenodeport'} . '/webhdfs/v1' . $file . '?op=OPEN';	
-	} elsif ( $self->{'authethod'} eq 'psuedo' ) {
+	} elsif ( $self->{'authmethod'} eq 'pseudo' ) {
        croak ("I need a 'user' value if authmethod is 'none'") if ( !$self->{'user'} ) ;
        $url = 'http://' . $self->{'namenode'} . ':' . $self->{'namenodeport'} . '/webhdfs/v1' . $file . '?op=OPEN' . '&user.name=' . $self->{'user'};
-	} elsif ( $self->{'authethod'} eq 'doas' ) {
+	} elsif ( $self->{'authmethod'} eq 'doas' ) {
        croak ("I need a 'user' value if authmethod is 'doas'") if ( !$self->{'user'} ) ;
-       croak ("I need a 'doas' value if authmethod is 'doas'") if ( !$self->{'doas'} ) ;
-       $url = 'http://' . $self->{'namenode'} . ':' . $self->{'namenodeport'} . '/webhdfs/v1' . $file . '?op=OPEN' . '&user.name=' . $self->{'user'} . '&doas=' . $self->{'doas'};
+       croak ("I need a 'doas_user' value if authmethod is 'doas'") if ( !$self->{'doas_user'} ) ;
+       $url = 'http://' . $self->{'namenode'} . ':' . $self->{'namenodeport'} . '/webhdfs/v1' . $file . '?op=OPEN' . '&user.name=' . $self->{'user'} . '&doas=' . $self->{'doas_user'};
 	}
     if ( $self->{'webhdfstoken'} ) {
         $url = $url . "&delegation=" . $self->{'webhdfstoken'};
@@ -136,13 +139,13 @@ sub getfilestatus {
     my $url;
 	if ($self->{'authmethod'} eq 'gssapi') { 
        $url = 'http://' . $self->{'namenode'} . ':' . $self->{'namenodeport'} . '/webhdfs/v1' . $file . '?op=GETFILESTATUS';	
-	} elsif ( $self->{'authethod'} eq 'psuedo' ) {
+	} elsif ( $self->{'authmethod'} eq 'pseudo' ) {
        croak ("I need a 'user' value if authmethod is 'none'") if ( !$self->{'user'} ) ;
        $url = 'http://' . $self->{'namenode'} . ':' . $self->{'namenodeport'} . '/webhdfs/v1' . $file . '?op=GETFILESTATUS' . '&user.name=' . $self->{'user'};
-	} elsif ( $self->{'authethod'} eq 'doas' ) {
+	} elsif ( $self->{'authmethod'} eq 'doas' ) {
        croak ("I need a 'user' value if authmethod is 'doas'") if ( !$self->{'user'} ) ;
-       croak ("I need a 'doas' value if authmethod is 'doas'") if ( !$self->{'doas'} ) ;
-       $url = 'http://' . $self->{'namenode'} . ':' . $self->{'namenodeport'} . '/webhdfs/v1' . $file . '?op=GETFILESTATUS' . '&user.name=' . $self->{'user'} . '&doas=' . $self->{'doas'};
+       croak ("I need a 'doas_user' value if authmethod is 'doas'") if ( !$self->{'doas_user'} ) ;
+       $url = 'http://' . $self->{'namenode'} . ':' . $self->{'namenodeport'} . '/webhdfs/v1' . $file . '?op=GETFILESTATUS' . '&user.name=' . $self->{'user'} . '&doas=' . $self->{'doas_user'};
 	}
     if ( $self->{'webhdfstoken'} ) {
         $url = $url . "&delegation=" . $self->{'webhdfstoken'};
@@ -161,14 +164,14 @@ sub Delete {
 
     my $url;
 	if ($self->{'authmethod'} eq 'gssapi') { 
-       $url = 'http://' . $self->{'namenode'} . ':' . $self->{'namenodeport'} . '/webhdfs/v1/?' . $file . '&op=DELETE';	
-	} elsif ( $self->{'authethod'} eq 'psuedo' ) {
+       $url = 'http://' . $self->{'namenode'} . ':' . $self->{'namenodeport'} . '/webhdfs/v1' . $file . '?&op=DELETE';	
+	} elsif ( $self->{'authmethod'} eq 'pseudo' ) {
        croak ("I need a 'user' value if authmethod is 'none'") if ( !$self->{'user'} ) ;
-       $url = 'http://' . $self->{'namenode'} . ':' . $self->{'namenodeport'} . '/webhdfs/v1/?' . $file . '&op=DELETE' . '&user.name=' . $self->{'user'};
-	} elsif ( $self->{'authethod'} eq 'doas' ) {
+       $url = 'http://' . $self->{'namenode'} . ':' . $self->{'namenodeport'} . '/webhdfs/v1' . $file . '?&op=DELETE' . '&user.name=' . $self->{'user'};
+	} elsif ( $self->{'authmethod'} eq 'doas' ) {
        croak ("I need a 'user' value if authmethod is 'doas'") if ( !$self->{'user'} ) ;
-       croak ("I need a 'doas' value if authmethod is 'doas'") if ( !$self->{'doas'} ) ;
-       $url = 'http://' . $self->{'namenode'} . ':' . $self->{'namenodeport'} . '/webhdfs/v1/?' . $file . '&op=DELETE' . '&user.name=' . $self->{'user'} . '&doas=' . $self->{'doas'};
+       croak ("I need a 'doas_user' value if authmethod is 'doas'") if ( !$self->{'doas_user'} ) ;
+       $url = 'http://' . $self->{'namenode'} . ':' . $self->{'namenodeport'} . '/webhdfs/v1' . $file . '?op=DELETE' . '&user.name=' . $self->{'user'} . '&doas=' . $self->{'doas_user'};
 	}
     if ( $self->{'webhdfstoken'} ) {
         $url = $url . "&delegation=" . $self->{'webhdfstoken'};
@@ -189,14 +192,14 @@ sub create {
     if ( !$perms ) { $perms = '000'; }
     my $url;
 	if ($self->{'authmethod'} eq 'gssapi') { 
-       $url = 'http://' . $self->{'namenode'} . ':' . $self->{'namenodeport'} . '/webhdfs/v1/?' . $file_dest . '&op=CREATE&permission=' . $perms . '&overwrite=false';	
-	} elsif ( $self->{'authethod'} eq 'psuedo' ) {
+       $url = 'http://' . $self->{'namenode'} . ':' . $self->{'namenodeport'} . '/webhdfs/v1' . $file_dest . '?&op=CREATE&permission=' . $perms . '&overwrite=false';	
+	} elsif ( $self->{'authmethod'} eq 'pseudo' ) {
        croak ("I need a 'user' value if authmethod is 'none'") if ( !$self->{'user'} ) ;
-       $url = 'http://' . $self->{'namenode'} . ':' . $self->{'namenodeport'} . '/webhdfs/v1/?' . $file_dest . '&op=CREATE&permission=' . $perms . '&overwrite=false' . '&user.name=' . $self->{'user'};	
-	} elsif ( $self->{'authethod'} eq 'doas' ) {
+       $url = 'http://' . $self->{'namenode'} . ':' . $self->{'namenodeport'} . '/webhdfs/v1' . $file_dest . '?&op=CREATE&permission=' . $perms . '&overwrite=false' . '&user.name=' . $self->{'user'};	
+	} elsif ( $self->{'authmethod'} eq 'doas' ) {
        croak ("I need a 'user' value if authmethod is 'doas'") if ( !$self->{'user'} ) ;
-       croak ("I need a 'doas' value if authmethod is 'doas'") if ( !$self->{'doas'} ) ;
-       $url = 'http://' . $self->{'namenode'} . ':' . $self->{'namenodeport'} . '/webhdfs/v1/?' . $file_dest . '&op=CREATE&permission=' . $perms . '&overwrite=false' . '&user.name=' . $self->{'user'} . '&doas=' . $self->{'doas'};
+       croak ("I need a 'doas_user' value if authmethod is 'doas'") if ( !$self->{'doas_user'} ) ;
+       $url = 'http://' . $self->{'namenode'} . ':' . $self->{'namenodeport'} . '/webhdfs/v1' . $file_dest . '?&op=CREATE&permission=' . $perms . '&overwrite=false' . '&user.name=' . $self->{'user'} . '&doas=' . $self->{'doas_user'};
 	}
 
     if ( $self->{'webhdfstoken'} ) {
@@ -223,14 +226,14 @@ sub mkdirs {
     if ( !$perms ) { $perms = '000'; }
     my $url;
 	if ($self->{'authmethod'} eq 'gssapi') { 
-       $url = 'http://' . $self->{'namenode'} . ':' . $self->{'namenodeport'} . '/webhdfs/v1/?' . $file . '&op=MKDIRS&permission=' . $perms ;
-	} elsif ( $self->{'authethod'} eq 'psuedo' ) {
+       $url = 'http://' . $self->{'namenode'} . ':' . $self->{'namenodeport'} . '/webhdfs/v1' . $file . '?&op=MKDIRS&permission=' . $perms ;
+	} elsif ( $self->{'authmethod'} eq 'pseudo' ) {
        croak ("I need a 'user' value if authmethod is 'none'") if ( !$self->{'user'} ) ;
-       $url = 'http://' . $self->{'namenode'} . ':' . $self->{'namenodeport'} . '/webhdfs/v1/?' . $file . '&op=MKDIRS&permission=' . $perms . '&user.name=' . $self->{'user'};	
-	} elsif ( $self->{'authethod'} eq 'doas' ) {
+       $url = 'http://' . $self->{'namenode'} . ':' . $self->{'namenodeport'} . '/webhdfs/v1' . $file . '?&op=MKDIRS&permission=' . $perms . '&user.name=' . $self->{'user'};	
+	} elsif ( $self->{'authmethod'} eq 'doas' ) {
        croak ("I need a 'user' value if authmethod is 'doas'") if ( !$self->{'user'} ) ;
-       croak ("I need a 'doas' value if authmethod is 'doas'") if ( !$self->{'doas'} ) ;
-       $url = 'http://' . $self->{'namenode'} . ':' . $self->{'namenodeport'} . '/webhdfs/v1/?' . $file . '&op=MKDIRS&permission=' . $perms . '&user.name=' . $self->{'user'} . '&doas=' . $self->{'doas'};
+       croak ("I need a 'doas_user' value if authmethod is 'doas'") if ( !$self->{'doas_user'} ) ;
+       $url = 'http://' . $self->{'namenode'} . ':' . $self->{'namenodeport'} . '/webhdfs/v1' . $file . '?&op=MKDIRS&permission=' . $perms . '&user.name=' . $self->{'user'} . '&doas=' . $self->{'doas_user'};
 	}
 
     if ( $self->{'webhdfstoken'} ) {
@@ -241,7 +244,31 @@ sub mkdirs {
 }
 
 # TODO add a content summary method
-# TODO add a get file checksum method
+sub getfilechecksum {
+    # get and return checksum for a file
+	# curl -i  "http://<HOST>:<PORT>/webhdfs/v1/<PATH>?op=GETFILECHECKSUM"
+    my ( $self, $file ) = @_;
+    my $url;
+	if ($self->{'authmethod'} eq 'gssapi') { 
+       $url = 'http://' . $self->{'namenode'} . ':' . $self->{'namenodeport'} . '/webhdfs/v1' . $file . '?op=GETFILECHECKSUM';
+	} elsif ( $self->{'authmethod'} eq 'pseudo' ) {
+       croak ("I need a 'user' value if authmethod is 'none'") if ( !$self->{'user'} ) ;
+       $url = 'http://' . $self->{'namenode'} . ':' . $self->{'namenodeport'} . '/webhdfs/v1' . $file . '?op=GETFILECHECKSUM' .  '&user.name=' . $self->{'user'}; ;
+	} elsif ( $self->{'authmethod'} eq 'doas' ) {
+       croak ("I need a 'user' value if authmethod is 'doas'") if ( !$self->{'user'} ) ;
+       croak ("I need a 'doas_user' value if authmethod is 'doas'") if ( !$self->{'doas_user'} ) ;
+       $url = 'http://' . $self->{'namenode'} . ':' . $self->{'namenodeport'} . '/webhdfs/v1' . $file . '?op=GETFILECHECKSUM' . '&user.name=' . $self->{'user'} . '&doas=' . $self->{'doas_user'};
+	}
+
+    if ( $self->{'webhdfstoken'} ) {
+        $url = $url . "&delegation=" . $self->{'webhdfstoken'};
+    }
+     
+    print $url , "\n";
+
+    $self->get( $url );
+    return $self;
+}
 # TODO add a get home directory method
 # TODO add a set permission  method for existing files
 # TODO add a set owner  method for existing files
@@ -257,13 +284,13 @@ sub liststatus {
     my $url;
 	if ($self->{'authmethod'} eq 'gssapi') { 
        $url = 'http://' . $self->{'namenode'} . ':' . $self->{'namenodeport'} . '/webhdfs/v1' . $file . '?op=LISTSTATUS';
-	} elsif ( $self->{'authethod'} eq 'psuedo' ) {
+	} elsif ( $self->{'authmethod'} eq 'pseudo' ) {
        croak ("I need a 'user' value if authmethod is 'none'") if ( !$self->{'user'} ) ;
        $url = 'http://' . $self->{'namenode'} . ':' . $self->{'namenodeport'} . '/webhdfs/v1' . $file . '?op=LISTSTATUS' .  '&user.name=' . $self->{'user'}; ;
-	} elsif ( $self->{'authethod'} eq 'doas' ) {
+	} elsif ( $self->{'authmethod'} eq 'doas' ) {
        croak ("I need a 'user' value if authmethod is 'doas'") if ( !$self->{'user'} ) ;
-       croak ("I need a 'doas' value if authmethod is 'doas'") if ( !$self->{'doas'} ) ;
-       $url = 'http://' . $self->{'namenode'} . ':' . $self->{'namenodeport'} . '/webhdfs/v1' . $file . '?op=LISTSTATUS' . '&user.name=' . $self->{'user'} . '&doas=' . $self->{'doas'};
+       croak ("I need a 'doas_user' value if authmethod is 'doas'") if ( !$self->{'doas_user'} ) ;
+       $url = 'http://' . $self->{'namenode'} . ':' . $self->{'namenodeport'} . '/webhdfs/v1' . $file . '?op=LISTSTATUS' . '&user.name=' . $self->{'user'} . '&doas=' . $self->{'doas_user'};
 	}
 
     if ( $self->{'webhdfstoken'} ) {
@@ -281,13 +308,13 @@ sub rename {
     my $url;
 	if ($self->{'authmethod'} eq 'gssapi') { 
        $url = 'http://' . $self->{'namenode'} . ':' . $self->{'namenodeport'} . '/webhdfs/v1/?' . $src . '&op=RENAME&destination=' . $dst . '&overwrite=false';	
-	} elsif ( $self->{'authethod'} eq 'psuedo' ) {
+	} elsif ( $self->{'authmethod'} eq 'pseudo' ) {
        croak ("I need a 'user' value if authmethod is 'none'") if ( !$self->{'user'} ) ;
        $url = 'http://' . $self->{'namenode'} . ':' . $self->{'namenodeport'} . '/webhdfs/v1/?' . $src . '&op=RENAME&destination=' . $dst . '&overwrite=false' . '&user.name=' . $self->{'user'};	
-	} elsif ( $self->{'authethod'} eq 'doas' ) {
+	} elsif ( $self->{'authmethod'} eq 'doas' ) {
        croak ("I need a 'user' value if authmethod is 'doas'") if ( !$self->{'user'} ) ;
-       croak ("I need a 'doas' value if authmethod is 'doas'") if ( !$self->{'doas'} ) ;
-       $url = 'http://' . $self->{'namenode'} . ':' . $self->{'namenodeport'} . '/webhdfs/v1/?' . $src . '&op=RENAME&destination=' . $dst . '&overwrite=false' . '&user.name=' . $self->{'user'} . '&doas=' . $self->{'doas'};
+       croak ("I need a 'doas_user' value if authmethod is 'doas'") if ( !$self->{'doas_user'} ) ;
+       $url = 'http://' . $self->{'namenode'} . ':' . $self->{'namenodeport'} . '/webhdfs/v1/?' . $src . '&op=RENAME&destination=' . $dst . '&overwrite=false' . '&user.name=' . $self->{'user'} . '&doas=' . $self->{'doas_user'};
 	}
 
     if ( $self->{'webhdfstoken'} ) {
@@ -341,6 +368,7 @@ LWP methods from Apache::Hadoop::WebHDFS.
 
 =head2 mkdirs()                - creates a directory on HDFS
 
+=head2 getfilechecksum()       - gets HDFS checksum on file
 
 =head1 GSSAPI Debugging
 
@@ -368,10 +396,9 @@ parent                 included with Perl 5.10.1 and newer or found on CPAN
   my $krb5=Authen::Krb5::Effortless->new();
   $krb5->fetch_TGT_PW('s3kr3+', $username);
   my $hdfsclient = Apache::Hadoop::WebHDFS->new( {namenode       =>"mynamenode.example.com",
-                                                  mynamenodeport =>50070}
-											   );
+                                                  namenodeport    =>"50070"});
   $hdfsclient->liststatus("/tmp");        
-  print Dumper $content  if ( $hdfsclient->success() ) ;     
+  print Dumper $hdfsclient->content()  if ( $hdfsclient->success() ) ;     
 
 	  
 =head1 AUTHOR
