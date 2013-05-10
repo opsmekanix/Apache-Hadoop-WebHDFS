@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 package Apache::Hadoop::WebHDFS;
-our $VERSION = "0.01";      
+our $VERSION = "0.02";      
 use warnings;
 use strict;
 use lib '.';
