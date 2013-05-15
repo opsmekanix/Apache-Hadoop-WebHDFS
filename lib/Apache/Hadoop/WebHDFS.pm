@@ -24,9 +24,6 @@ sub redirect_ok {
     return 1;    # always return true.
 }
 
-
-# TODO - need to add check in new for authmethod = 'pseudo, gssapi, or doas'
-
 sub new {
 	# Create new WebHDFS object
     my $class = shift;
@@ -40,7 +37,11 @@ sub new {
 	if ($_[0]->{'namenodeport'}) { $namenodeport =  $_[0]->{'namenodeport'}; }
     if ($_[0]->{'authmethod'}) { $authmethod =  $_[0]->{'authmethod'}; }
     if ($_[0]->{'user'}) { $user =  $_[0]->{'user'}; }
-	
+
+    # check that we get proper authmethod
+    if (($authmethod ne 'gssapi') or ($authmethod ne 'pseudo') or ($authmethod ne 'doas')) {
+       croak ("Supported auth methods in new() are 'gssapi', 'pseudo', or 'doas'");
+    }
     my $self = $class-> SUPER::new();
 
 	$self->{'namenode'} = $namenode;
@@ -264,8 +265,6 @@ sub getfilechecksum {
         $url = $url . "&delegation=" . $self->{'webhdfstoken'};
     }
      
-    print $url , "\n";
-
     $self->get( $url );
     return $self;
 }
@@ -332,7 +331,7 @@ Apache::Hadoop::WebHDFS - interface to Hadoop's WebHDS API that supports GSSAPI 
 
 =head1 VERSION
 
-Version 0.01
+Version 0.02
 
 =head1 SYNOPSIS
 
