@@ -24,6 +24,9 @@ sub redirect_ok {
     return 1;    # always return true.
 }
 
+
+# TODO - need to add check in new for authmethod = 'pseudo, gssapi, or doas'
+
 sub new {
 	# Create new WebHDFS object
     my $class = shift;
@@ -38,10 +41,6 @@ sub new {
     if ($_[0]->{'authmethod'}) { $authmethod =  $_[0]->{'authmethod'}; }
     if ($_[0]->{'user'}) { $user =  $_[0]->{'user'}; }
 
-    # check that we get proper authmethod
-    if (($authmethod ne 'gssapi') or ($authmethod ne 'pseudo') or ($authmethod ne 'doas')) {
-       croak ("Supported auth methods in new() are 'gssapi', 'pseudo', or 'doas'");
-    }
     my $self = $class-> SUPER::new();
 
 	$self->{'namenode'} = $namenode;
@@ -63,9 +62,9 @@ sub new {
 
 sub getdelegationtoken {
     # Fetch delegation token and store in object
-    my ( $self, $user) = @_; 
+    my ( $self ) = @_; 
     my $token = '';
-	my $url = 'http://' . $self->{'namenode'} . ':' . $self->{'namenodeport'} . '/webhdfs/v1/?op=GETDELEGATIONTOKEN&renewer=' . $user;
+	my $url = 'http://' . $self->{'namenode'} . ':' . $self->{'namenodeport'} . '/webhdfs/v1/?op=GETDELEGATIONTOKEN&renewer=' . $self->{'user'};
 	if ($self->{'authmethod'} eq 'gssapi') {
       $self->get( $url );
       if ( $self->success() ) { 

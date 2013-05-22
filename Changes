@@ -7,7 +7,7 @@ Revision history for Apache-Hadoop-WebHDFS
         can read & write files/directories to HDFS.  One can also get a delegation
         token.  See POD for further information on implemented methods.
 
-0.02    DATE IN THE FUTURE - 
+0.02    May 22, 2013 -
         . Added non-secure login and proxy methods.  
         . getfilesum method added 
         . Documentation updates for newly defined methods.
