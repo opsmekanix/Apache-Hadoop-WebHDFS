@@ -1,5 +1,11 @@
 Revision history for Apache-Hadoop-WebHDFS
 
+0.03    June xx, 2013 - 
+        . Fixed typos in Delete & Create WebHDFS urls.
+        . Added 'delete' web request method as it's not supported by www::mechanize and needed for webhdfs rest interface
+        
+        
+
 0.02    May 22, 2013 -
         . Added non-secure login and proxy methods.  
         . getfilesum method added 

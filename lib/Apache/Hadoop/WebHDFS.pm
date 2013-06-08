@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 package Apache::Hadoop::WebHDFS;
-our $VERSION = "0.02";      
+our $VERSION = "0.03";      
 use warnings;
 use strict;
 use lib '.';
@@ -81,7 +81,7 @@ sub canceldelegationtoken {
     # Tell namenode to cancel existing delegation token and remove token from object
     my ( $self ) = @_; 
 	if ($self->{'authmethod'} eq 'gssapi') { if ( $self->{'webhdfstoken'} )  {
-   	   my $url = 'http://' . $self->{'namenode'} . ':' . $self->{'namenodeport'} . '/webhdfs/v1/?op=CANCELDELEGATION&token=' . $self->{'webhdfstoken'};
+   	   my $url = 'http://' . $self->{'namenode'} . ':' . $self->{'namenodeport'} . '/webhdfs/v1/?op=CANCELDELEGATIONTOKEN&token=' . $self->{'webhdfstoken'};
           $self->get( $url );
           delete $self->{'webhdfstoken'} 
        } 
@@ -154,6 +154,15 @@ sub getfilestatus {
     return $self;
 }
 
+# Added as  LWP::UserAgent and WWW:Mechanize don't have delete
+# stolen from http://code.google.com/p/www-mechanize/issues/detail?id=219
+sub _SUPER_delete {
+    require HTTP::Request::Common;
+    my($self, @parameters) = @_;
+    my @suff = $self->_process_colonic_headers(\@parameters,1);
+    return $self->request( HTTP::Request::Common::DELETE( @parameters ), @suff );
+}
+
 sub Delete {
 	# TODO need to add overwrite, blocksize, replication, and buffersize options
     my ( $self, $file ) = @_;
@@ -164,10 +173,10 @@ sub Delete {
 
     my $url;
 	if ($self->{'authmethod'} eq 'gssapi') { 
-       $url = 'http://' . $self->{'namenode'} . ':' . $self->{'namenodeport'} . '/webhdfs/v1' . $file . '?&op=DELETE';	
+       $url = 'http://' . $self->{'namenode'} . ':' . $self->{'namenodeport'} . '/webhdfs/v1' . $file . '?op=DELETE';	
 	} elsif ( $self->{'authmethod'} eq 'pseudo' ) {
        croak ("I need a 'user' value if authmethod is 'none'") if ( !$self->{'user'} ) ;
-       $url = 'http://' . $self->{'namenode'} . ':' . $self->{'namenodeport'} . '/webhdfs/v1' . $file . '?&op=DELETE' . '&user.name=' . $self->{'user'};
+       $url = 'http://' . $self->{'namenode'} . ':' . $self->{'namenodeport'} . '/webhdfs/v1' . $file . '?op=DELETE' . '&user.name=' . $self->{'user'};
 	} elsif ( $self->{'authmethod'} eq 'doas' ) {
        croak ("I need a 'user' value if authmethod is 'doas'") if ( !$self->{'user'} ) ;
        croak ("I need a 'doas_user' value if authmethod is 'doas'") if ( !$self->{'doas_user'} ) ;
@@ -177,7 +186,7 @@ sub Delete {
         $url = $url . "&delegation=" . $self->{'webhdfstoken'};
     }
 
-    $self->get( $url );
+    $self->_SUPER_delete( $url );
     return $self;
 }
 
@@ -192,14 +201,14 @@ sub create {
     if ( !$perms ) { $perms = '000'; }
     my $url;
 	if ($self->{'authmethod'} eq 'gssapi') { 
-       $url = 'http://' . $self->{'namenode'} . ':' . $self->{'namenodeport'} . '/webhdfs/v1' . $file_dest . '?&op=CREATE&permission=' . $perms . '&overwrite=false';	
+       $url = 'http://' . $self->{'namenode'} . ':' . $self->{'namenodeport'} . '/webhdfs/v1' . $file_dest . '?op=CREATE&permission=' . $perms . '&overwrite=false';	
 	} elsif ( $self->{'authmethod'} eq 'pseudo' ) {
        croak ("I need a 'user' value if authmethod is 'none'") if ( !$self->{'user'} ) ;
-       $url = 'http://' . $self->{'namenode'} . ':' . $self->{'namenodeport'} . '/webhdfs/v1' . $file_dest . '?&op=CREATE&permission=' . $perms . '&overwrite=false' . '&user.name=' . $self->{'user'};	
+       $url = 'http://' . $self->{'namenode'} . ':' . $self->{'namenodeport'} . '/webhdfs/v1' . $file_dest . '?op=CREATE&permission=' . $perms . '&overwrite=false' . '&user.name=' . $self->{'user'};	
 	} elsif ( $self->{'authmethod'} eq 'doas' ) {
        croak ("I need a 'user' value if authmethod is 'doas'") if ( !$self->{'user'} ) ;
        croak ("I need a 'doas_user' value if authmethod is 'doas'") if ( !$self->{'doas_user'} ) ;
-       $url = 'http://' . $self->{'namenode'} . ':' . $self->{'namenodeport'} . '/webhdfs/v1' . $file_dest . '?&op=CREATE&permission=' . $perms . '&overwrite=false' . '&user.name=' . $self->{'user'} . '&doas=' . $self->{'doas_user'};
+       $url = 'http://' . $self->{'namenode'} . ':' . $self->{'namenodeport'} . '/webhdfs/v1' . $file_dest . '?op=CREATE&permission=' . $perms . '&overwrite=false' . '&user.name=' . $self->{'user'} . '&doas=' . $self->{'doas_user'};
 	}
 
     if ( $self->{'webhdfstoken'} ) {
@@ -330,7 +339,7 @@ Apache::Hadoop::WebHDFS - interface to Hadoop's WebHDS API that supports GSSAPI 
 
 =head1 VERSION
 
-Version 0.02
+Version 0.03
 
 =head1 SYNOPSIS
 
