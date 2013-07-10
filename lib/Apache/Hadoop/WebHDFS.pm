@@ -6,6 +6,7 @@ use strict;
 use lib '.';
 use parent 'WWW::Mechanize';
 use Carp;
+use File::Map 'map_file';
 
 # ###################
 # calls we care about
@@ -24,11 +25,16 @@ sub redirect_ok {
     return 1;    # always return true.
 }
 
-
-# TODO - need to add check in new for authmethod = 'pseudo, gssapi, or doas'
-
 sub new {
 	# Create new WebHDFS object
+
+    # TODO add other supported authentication methods
+           # proxy user and non-gssapi unsecure grids
+           # note: 'pseudo' non-gssapi method added. still need to tst proxy user
+
+           # curl -i "http://<HOST>:<PORT>/webhdfs/v1/<PATH>?[user.name=<USER>&]op=..." or
+           # curl -i "http://<HOST>:<PORT>/webhdfs/v1/<PATH>?[user.name=<USER>&]doas=<USER>&op=..."  
+
     my $class = shift;
 	my $namenode =  'localhost';
 	my $namenodeport= 50070;
@@ -41,7 +47,10 @@ sub new {
     if ($_[0]->{'authmethod'}) { $authmethod =  $_[0]->{'authmethod'}; }
     if ($_[0]->{'user'}) { $user =  $_[0]->{'user'}; }
 
-    my $self = $class-> SUPER::new();
+    # stack_depth set to 0 so we don't blow-up ram by saving content with each request.
+    my $self = $class-> SUPER::new( agent=>"Apache_Hadoop_WebHDFS",
+                                    stack_depth=>"0", 
+    );
 
 	$self->{'namenode'} = $namenode;
 	$self->{'namenodeport'} = $namenodeport;
@@ -52,13 +61,6 @@ sub new {
 					        
 	return $self;
 }
-
-# TODO add other supported authentication methods
-#      proxy user and non-gssapi unsecure grids 
-#      note: 'pseudo' non-gssapi method added.   still need to tst proxy user
-
-# curl -i "http://<HOST>:<PORT>/webhdfs/v1/<PATH>?[user.name=<USER>&]op=..." or 
-# curl -i "http://<HOST>:<PORT>/webhdfs/v1/<PATH>?[user.name=<USER>&]doas=<USER>&op=..."
 
 sub getdelegationtoken {
     # Fetch delegation token and store in object
@@ -107,12 +109,10 @@ sub renewdelegationtoken {
 }
 
 sub Open {
-	# TODO need to add overwrite, blocksize, replication, and buffersize options
-    my ( $self, $file ) = @_;
-
-	#curl -i -L "http://<HOST>:<PORT>/webhdfs/v1/<PATH>?op=OPEN
-	#                    [&offset=<LONG>][&length=<LONG>][&buffersize=<INT>]"
-	# TODO implement offset, length, and buffersize 
+    # TODO implement offset, length, and buffersize 
+	# curl -i -L "http://<HOST>:<PORT>/webhdfs/v1/<PATH>?op=OPEN
+    #                                                   [&offset=<LONG>][&length=<LONG>][&buffersize=<INT>]"
+    my ( $self, $file, $offset, $length, $buffersize ) = @_;
 
     my $url;
 	if ($self->{'authmethod'} eq 'gssapi') { 
@@ -127,6 +127,18 @@ sub Open {
 	}
     if ( $self->{'webhdfstoken'} ) {
         $url = $url . "&delegation=" . $self->{'webhdfstoken'};
+    }
+
+    if ($offset) { 
+        $url = $url . "&offset=" . $offset;
+    }
+
+    if ($length) { 
+        $url = $url . "&length=" . $length;
+    }
+
+    if ($buffersize) { 
+        $url = $url . "&buffersize=" . $buffersize;
     }
 
     $self->get( $url );
@@ -154,7 +166,7 @@ sub getfilestatus {
     return $self;
 }
 
-# Added as  LWP::UserAgent and WWW:Mechanize don't have delete
+# Added as  LWP::UserAgent and WWW:Mechanize don't have delete 
 # stolen from http://code.google.com/p/www-mechanize/issues/detail?id=219
 sub _SUPER_delete {
     require HTTP::Request::Common;
@@ -164,12 +176,8 @@ sub _SUPER_delete {
 }
 
 sub Delete {
-	# TODO need to add overwrite, blocksize, replication, and buffersize options
-    my ( $self, $file ) = @_;
-
-	# curl -i -X DELETE "http://<host>:<port>/webhdfs/v1/<path>?op=DELETE
-	#                                            [&recursive=<true|false>]"
-	# TODO implement recursive
+	# curl -i -X DELETE "http://<host>:<port>/webhdfs/v1/<path>?op=DELETE[&recursive=<true|false>]"
+    my ( $self, $file, $recursive ) = @_;
 
     my $url;
 	if ($self->{'authmethod'} eq 'gssapi') { 
@@ -186,11 +194,15 @@ sub Delete {
         $url = $url . "&delegation=" . $self->{'webhdfstoken'};
     }
 
+    if ($recursive) {
+       $url = $url . "&recursive=true";
+    } else {
+       $url = $url . "&recursive=false";
+    }
+
     $self->_SUPER_delete( $url );
     return $self;
 }
-
-# TODO need delete method and specify if it's recursive or not
 
 sub create {
 	# TODO need to add overwrite, blocksize, replication, and buffersize options
@@ -198,6 +210,7 @@ sub create {
 	#                                         [&overwrite=<true|false>][&blocksize=<LONG>][&replication=<SHORT>]
 	#                                         [&permission=<OCTAL>][&buffersize=<INT>]"
     my ( $self, $file_src, $file_dest, $perms ) = @_;
+    #my ( $self, $file_src, $file_dest, $perms, $overwrite, $blocksize, $replication, $buffersize ) = @_;
     if ( !$perms ) { $perms = '000'; }
     my $url;
 	if ($self->{'authmethod'} eq 'gssapi') { 
@@ -215,14 +228,19 @@ sub create {
         $url = $url . "&delegation=" . $self->{'webhdfstoken'};
     }
 
-    # TODO: implement File::Map and means to handle binmode.  For now we slurp ... :(
+#    Need to implement key->value to make this user proof.  We don't want blocksize being set for replication -> see line 199
+#    if ($overwrite) { 
+#        $url = $url . "&overwrite=true";
+#    } else {
+#        $url = $url . "&overwrite=false";
+#    }
+#    
+#    if ($blocksize)   { $url = $url . "&blocksize="   . $blocksize; }
+#    if ($replication) { $url = $url . "&replication=" . $replication; }
+#    if ($buffersize)  { $url = $url . "&buffersize=" .  $buffersize; }
+
     my $content;
-    {
-        local $/;    # unset record seperator so we can put everything in a single string
-        open my $fh, '<', $file_src or die "can't open $file_src: $!";
-        $content = <$fh>;
-        close $fh;
-    }
+    map_file($content => $file_src, "<");
     $self->put( $url, content => $content );
     return $self;
 }
