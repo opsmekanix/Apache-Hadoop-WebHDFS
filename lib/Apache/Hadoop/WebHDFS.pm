@@ -27,14 +27,6 @@ sub redirect_ok {
 
 sub new {
 	# Create new WebHDFS object
-
-    # TODO add other supported authentication methods
-           # proxy user and non-gssapi unsecure grids
-           # note: 'pseudo' non-gssapi method added. still need to tst proxy user
-
-           # curl -i "http://<HOST>:<PORT>/webhdfs/v1/<PATH>?[user.name=<USER>&]op=..." or
-           # curl -i "http://<HOST>:<PORT>/webhdfs/v1/<PATH>?[user.name=<USER>&]doas=<USER>&op=..."  
-
     my $class = shift;
 	my $namenode =  'localhost';
 	my $namenodeport= 50070;
@@ -109,9 +101,7 @@ sub renewdelegationtoken {
 }
 
 sub Open {
-    # TODO implement offset, length, and buffersize 
-	# curl -i -L "http://<HOST>:<PORT>/webhdfs/v1/<PATH>?op=OPEN
-    #                                                   [&offset=<LONG>][&length=<LONG>][&buffersize=<INT>]"
+	# curl -i -L "http://<HOST>:<PORT>/webhdfs/v1/<PATH>?op=OPEN[&offset=<LONG>][&length=<LONG>][&buffersize=<INT>]"
     my ( $self, $file, $offset, $length, $buffersize ) = @_;
 
     my $url;
@@ -204,42 +194,38 @@ sub Delete {
     return $self;
 }
 
+
 sub create {
-	# TODO need to add overwrite, blocksize, replication, and buffersize options
 	# curl -i -X PUT "http://<HOST>:<PORT>/webhdfs/v1/<PATH>?op=CREATE
 	#                                         [&overwrite=<true|false>][&blocksize=<LONG>][&replication=<SHORT>]
 	#                                         [&permission=<OCTAL>][&buffersize=<INT>]"
-    my ( $self, $file_src, $file_dest, $perms ) = @_;
-    #my ( $self, $file_src, $file_dest, $perms, $overwrite, $blocksize, $replication, $buffersize ) = @_;
-    if ( !$perms ) { $perms = '000'; }
+    my ( $self, $content, $file_src, $file_dest, $perms, $overwrite, $blocksize, $replication, $buffersize ) = undef;
+    $self = shift; 
+    if ($_[0]->{'permissions'}) { $perms       = $_[0]->{'permissions'};  } else { $perms = '000'; }
+    if ($_[0]->{'overwrite'})   { $overwrite   = $_[0]->{'overwrite'};    } else { $overwrite='false'; } 
+    if ($_[0]->{'srcfile'})     { $file_src    = $_[0]->{'srcfile'};      } else { croak ("Need local source file to copy to HDFS") ;}
+    if ($_[0]->{'dstfile'})     { $file_dest   = $_[0]->{'dstfile'};      } else { croak ("Need HDFS location before file copy can happen") ;}
+    if ($_[0]->{'blocksize'})   { $blocksize   = $_[0]->{'blocksize'};    }
+    if ($_[0]->{'replication'}) { $replication = $_[0]->{'replication'};  }
+    if ($_[0]->{'buffersize'})  { $buffersize  = $_[0]->{'buffersize'};   }
     my $url;
 	if ($self->{'authmethod'} eq 'gssapi') { 
-       $url = 'http://' . $self->{'namenode'} . ':' . $self->{'namenodeport'} . '/webhdfs/v1' . $file_dest . '?op=CREATE&permission=' . $perms . '&overwrite=false';	
+       $url = 'http://' . $self->{'namenode'} . ':' . $self->{'namenodeport'} . '/webhdfs/v1' . $file_dest . '?op=CREATE&permission=' . $perms . '&overwrite=' . $overwrite ;	
 	} elsif ( $self->{'authmethod'} eq 'pseudo' ) {
        croak ("I need a 'user' value if authmethod is 'none'") if ( !$self->{'user'} ) ;
-       $url = 'http://' . $self->{'namenode'} . ':' . $self->{'namenodeport'} . '/webhdfs/v1' . $file_dest . '?op=CREATE&permission=' . $perms . '&overwrite=false' . '&user.name=' . $self->{'user'};	
+       $url = 'http://' . $self->{'namenode'} . ':' . $self->{'namenodeport'} . '/webhdfs/v1' . $file_dest . '?op=CREATE&permission=' . $perms . '&overwrite=' . $overwrite . '&user.name=' . $self->{'user'};	
 	} elsif ( $self->{'authmethod'} eq 'doas' ) {
        croak ("I need a 'user' value if authmethod is 'doas'") if ( !$self->{'user'} ) ;
        croak ("I need a 'doas_user' value if authmethod is 'doas'") if ( !$self->{'doas_user'} ) ;
-       $url = 'http://' . $self->{'namenode'} . ':' . $self->{'namenodeport'} . '/webhdfs/v1' . $file_dest . '?op=CREATE&permission=' . $perms . '&overwrite=false' . '&user.name=' . $self->{'user'} . '&doas=' . $self->{'doas_user'};
+       $url = 'http://' . $self->{'namenode'} . ':' . $self->{'namenodeport'} . '/webhdfs/v1' . $file_dest . '?op=CREATE&permission=' . $perms . '&overwrite=' . $overwrite . '&user.name=' . $self->{'user'} . '&doas=' . $self->{'doas_user'};
 	}
 
-    if ( $self->{'webhdfstoken'} ) {
-        $url = $url . "&delegation=" . $self->{'webhdfstoken'};
-    }
+    if ( $self->{'webhdfstoken'} ) { $url = $url . "&delegation=" . $self->{'webhdfstoken'};  }
 
-#    Need to implement key->value to make this user proof.  We don't want blocksize being set for replication -> see line 199
-#    if ($overwrite) { 
-#        $url = $url . "&overwrite=true";
-#    } else {
-#        $url = $url . "&overwrite=false";
-#    }
-#    
-#    if ($blocksize)   { $url = $url . "&blocksize="   . $blocksize; }
-#    if ($replication) { $url = $url . "&replication=" . $replication; }
-#    if ($buffersize)  { $url = $url . "&buffersize=" .  $buffersize; }
+    if ( $blocksize )   { $url = $url . "&blocksize="   . $blocksize   ; }
+    if ( $replication ) { $url = $url . "&replication=" . $replication ; }
+    if ( $buffersize )  { $url = $url . "&buffersize="  . $buffersize  ; }
 
-    my $content;
     map_file($content => $file_src, "<");
     $self->put( $url, content => $content );
     return $self;
