@@ -1,12 +1,18 @@
 Revision history for Apache-Hadoop-WebHDFS
 
 0.03    July xx, 2013 - 
-        . Adding 'offset', 'length', 'buffersize' to Open.  NOTE THIS BREAKS BACKWARD COMPATIBLITY WITH v0.01 & v0.02 - sorry
-        . Fixed typos in Delete & Create WebHDFS urls.
+        . NOTE THIS UPDATE BREAKS BACKWARD COMPATIBLITY WITH v0.01 and v.02 
+        . Adding 'contentsummary' method
+        . Adding 'gethomedirectory' method
+        . Adding 'setreplication' method
+        . Adding 'settimes' method
+        . Adding 'setpermssion' method
+        . Adding 'offset', 'length', 'buffersize' to Open.  
+        . Adding 'recrusive' flag to Delete.  
+        . Fixed typos in Rename, Delete, & Create, WebHDFS urls.
         . Added 'delete' web request method as it's not supported by www::mechanize and needed for webhdfs rest interface
         . Added File::Map as a dependency.  This is to help better manage memory usage when writing large files to HDFS.
         . Setting 'stack_depth=0' to prevent history of requests from blowing up memory.
-        . Adding 'recrusive' flag to Delete
         . Documentation updates.
         
 
