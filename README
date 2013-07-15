@@ -21,6 +21,9 @@ To install this module, run the following commands:
 	./Build test
 	./Build install
 
+If you need to turn this module into a rpm package, please look at 'cpanspec' to build a spec 
+file which can be fed to rpmbuild.
+
 SUPPORT AND DOCUMENTATION
 
 After installing, you can find documentation for this module with the

@@ -534,7 +534,7 @@ sub rename {
 
 =head1 NAME
 
-Apache::Hadoop::WebHDFS - interface to Hadoop's WebHDS API that supports GSSAPI (secure) access.
+Apache::Hadoop::WebHDFS - interface to Hadoop's WebHDS API that supports GSSAPI/SPNEGO (secure) access.
 
 =head1 VERSION
 
@@ -551,7 +551,14 @@ with unsecure grids
 Apache::Hadoop::WebHDFS is a subclass of WWW:Mechanize, so one could 
 reference WWW::Mechanize methods if needed.  One will note that 
 WWW::Mechanize is a subclass of LWP, meaning it's possible to also reference 
-LWP methods from Apache::Hadoop::WebHDFS.
+LWP methods from Apache::Hadoop::WebHDFS.  For example to debug the GSSAPI
+calls used during the request, enable LWP::Debug by adding 'use LWP::Debug qw(+);' to your script.
+
+Content returned from WebHDFS is left in the native JSON format. Including your favorite JSON module like JSON::Any 
+will help with mangaging the JSON output.   To get access to the content stored in your Apache::Hadoop::WebHDFS object,
+use the methods provided by WWW::Mechanize, such as 'success', 'status', and 'content'.  Please see 'EXAMPLE' below
+for how this is used.
+
 
 =head1 METHODS 
 
@@ -670,10 +677,6 @@ LWP methods from Apache::Hadoop::WebHDFS.
 
 =back
 
-=head1 GSSAPI Debugging
-
-To see GSSAPI calls during the request, enable LWP::Debug by adding 
-'use LWP::Debug qw(+);' to your script.
 
 =head1 REQUIREMENTS
 
@@ -684,21 +687,29 @@ To see GSSAPI calls during the request, enable LWP::Debug by adding
  parent                 included with Perl 5.10.1 and newer or found on CPAN for older versions of perl
  File::Map              required for reading contents of files into mmap'ed memory space instead of perl's symbol table.
 
-=head1 EXAMPLES
+=head1 EXAMPLE
 
 =head2 list a HDFS directory on a secure hadop cluster
 
-  #!/bin/perl
+  #!/usr/bin/perl
+  use strict;
+  use warnings;
   use Data::Dumper;
   use Apache::Hadoop::WebHDFS;
   my $username=getlogin();
   my $hdfsclient = Apache::Hadoop::WebHDFS->new( {namenode        =>"mynamenode.example.com",
-                                                  namenodeport    =>"50070"},
+                                                  namenodeport    =>"50070",
                                                   authmethod      =>"gssapi",
-                                                  user            =>"afaris",
+                                                  user            =>$username,
                                                  });
-  $hdfsclient->liststatus({path=>'/tmp'});        
-  print Dumper $hdfsclient->content()  if ( $hdfsclient->success() ) ;     
+  $hdfsclient->liststatus( {path=>'/user/$username'} );        
+  if ($hdfsclient->success()) {
+     print "Request SUCCESS: ", $hdfsclient->status() , "\n\n";
+     print "Dumping content:\n";
+     print Dumper $hdfsclient->content() ;
+  } else {
+     print "Request FAILED: ", $hdfsclient->status() , "\n";
+  } 
 
 	  
 =head1 AUTHOR

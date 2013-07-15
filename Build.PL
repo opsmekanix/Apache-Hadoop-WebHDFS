@@ -18,6 +18,7 @@ my $builder = Module::Build->new(
         'LWP::Debug'             => 0,
         'Carp'                   => 0,
         'parent'                 => 0,
+        'File::Map'              => 0,
     },
     add_to_cleanup      => [ 'Apache-Hadoop-WebHDFS-*' ],
     create_makefile_pl  => 'traditional',
