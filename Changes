@@ -1,5 +1,9 @@
 Revision history for Apache-Hadoop-WebHDFS
 
+0.03.1  Aug 5, 2013 - 
+        . Bug Fix - Fixed transposed variables in rename method
+        
+
 0.03    July 15, 2013 - 
         . NOTE THIS UPDATE BREAKS BACKWARD COMPATIBLITY WITH v0.01 and v.02 
         . Adding 'contentsummary' method

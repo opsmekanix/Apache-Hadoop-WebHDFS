@@ -11,6 +11,7 @@ WWW::Mechanize         is needed as this is a subclass.
 LWP::Debug             is required for debugging GSSAPI connections
 LWP::Authen::Negotiate is the magic sauce for working with secure hadoop clusters
 parent                 included with Perl 5.10.1 and newer 
+File::Map              is used for mmap'ing files instead of slurping
 
 INSTALLATION
 

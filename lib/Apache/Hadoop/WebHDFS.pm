@@ -508,19 +508,19 @@ sub rename {
 
     my ( $self, $src, $dst ) = undef;
     $self = shift; 
-    if ($_[0]->{'srcfile'})     { $src  = $_[0]->{'dstfile'}; } else { croak ("Need HDFS source before rename can happen") ;}
-    if ($_[0]->{'dstfile'})     { $dst = $_[0]->{'srcfile'}; } else { croak ("Need HDFS destination before rename can happen") ;}
+    if ($_[0]->{'srcfile'})     { $src  = $_[0]->{'srcfile'}; } else { croak ("Need HDFS source before rename can happen") ;}
+    if ($_[0]->{'dstfile'})     { $dst = $_[0]->{'dstfile'}; } else { croak ("Need HDFS destination before rename can happen") ;}
 	
     my $url;
 	if ($self->{'authmethod'} eq 'gssapi') { 
-       $url = 'http://' . $self->{'namenode'} . ':' . $self->{'namenodeport'} . '/webhdfs/v1/?' . $src . '&op=RENAME&destination=' . $dst ;
+       $url = 'http://' . $self->{'namenode'} . ':' . $self->{'namenodeport'} . '/webhdfs/v1' . $src . '?op=RENAME&destination=' . $dst ;
 	} elsif ( $self->{'authmethod'} eq 'unsecure' ) {
        croak ("I need a 'user' value if authmethod is 'none'") if ( !$self->{'user'} ) ;
-       $url = 'http://' . $self->{'namenode'} . ':' . $self->{'namenodeport'} . '/webhdfs/v1/?' . $src . '&op=RENAME&destination=' . $dst . '&user.name=' . $self->{'user'};	
+       $url = 'http://' . $self->{'namenode'} . ':' . $self->{'namenodeport'} . '/webhdfs/v1' . $src . '?op=RENAME&destination=' . $dst . '&user.name=' . $self->{'user'};	
 	} elsif ( $self->{'authmethod'} eq 'doas' ) {
        croak ("I need a 'user' value if authmethod is 'doas'") if ( !$self->{'user'} ) ;
        croak ("I need a 'doas_user' value if authmethod is 'doas'") if ( !$self->{'doas_user'} ) ;
-       $url = 'http://' . $self->{'namenode'} . ':' . $self->{'namenodeport'} . '/webhdfs/v1/?' . $src . '&op=RENAME&destination=' . $dst  . '&user.name=' . $self->{'user'} . '&doas=' . $self->{'doas_user'};
+       $url = 'http://' . $self->{'namenode'} . ':' . $self->{'namenodeport'} . '/webhdfs/v1' . $src . '?op=RENAME&destination=' . $dst  . '&user.name=' . $self->{'user'} . '&doas=' . $self->{'doas_user'};
 	}
 
     if ( $self->{'webhdfstoken'} ) {

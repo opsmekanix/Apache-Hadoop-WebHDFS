@@ -11,6 +11,7 @@ WWW::Mechanize         is needed as this is a subclass.
 LWP::Debug             is required for debugging GSSAPI connections
 LWP::Authen::Negotiate is the magic sauce for working with secure hadoop clusters
 parent                 included with Perl 5.10.1 and newer 
+File::Map              is used for mmap'ing files instead of slurping
 
 INSTALLATION
 
@@ -20,6 +21,9 @@ To install this module, run the following commands:
 	./Build
 	./Build test
 	./Build install
+
+If you need to turn this module into a rpm package, please look at 'cpanspec' to build a spec 
+file which can be fed to rpmbuild.
 
 SUPPORT AND DOCUMENTATION
 
