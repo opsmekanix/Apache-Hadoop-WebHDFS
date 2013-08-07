@@ -1,5 +1,8 @@
 Revision history for Apache-Hadoop-WebHDFS
 
+0.04    Aug 6, 2013 - 
+        . Bumping version number so cpan will correctly index the latest version
+
 0.03.1  Aug 5, 2013 - 
         . Bug Fix - Fixed transposed variables in rename method
         

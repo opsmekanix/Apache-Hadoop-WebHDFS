@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 package Apache::Hadoop::WebHDFS;
-our $VERSION = "0.03.1";      
+our $VERSION = "0.04";      
 use warnings;
 use strict;
 use lib '.';
@@ -538,7 +538,7 @@ Apache::Hadoop::WebHDFS - interface to Hadoop's WebHDS API that supports GSSAPI/
 
 =head1 VERSION
 
-Version 0.03
+Version 0.04
 
 =head1 SYNOPSIS
 
