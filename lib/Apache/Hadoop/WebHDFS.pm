@@ -248,7 +248,7 @@ sub mkdirs {
     my ( $self, $perms, $path, $url ) = undef;
     $self = shift; 
     if ($_[0]->{'path'})       { $path = $_[0]->{'path'};           } else { croak ("I need a HDFS location to create directory"); }
-    if ($_[0]->{'permissons'}) { $perms = $_[0]->{'permisssions'};  } else { $perms = '000'; }
+    if ($_[0]->{'permissions'}) { $perms = $_[0]->{'permissions'};  } else { $perms = '000'; }
 
 
 	if ($self->{'authmethod'} eq 'gssapi') { 
@@ -349,7 +349,7 @@ sub setpermission {
     my ( $self, $path, $url, $perms ) = undef;
     $self = shift; 
     if ($_[0]->{'path'}) { $path = $_[0]->{'path'};  } else { croak ("I need a HDFS path to set permmissions"); }
-    if ($_[0]->{'permissison'}) { $perms = $_[0]->{'permisssion'};  } 
+    if ($_[0]->{'permissison'}) { $perms = $_[0]->{'permission'};  } 
 
 	if ($self->{'authmethod'} eq 'gssapi') { 
        $url = 'http://' . $self->{'namenode'} . ':' . $self->{'namenodeport'} . '/webhdfs/v1' . $path . '?op=SETPERMISSION';
@@ -656,8 +656,8 @@ for how this is used.
 
 =item *  setpermission() - changes owner and group permissions on a file or directory on HDFS.  Path is required and permissions are optional.  
 
-         $hdfsclient->setpermisssion({ path=>'/path/to/my/hdfs/directory',
-                                       permisssion=>'640',
+         $hdfsclient->setpermission({ path=>'/path/to/my/hdfs/directory',
+                                       permission=>'640',
          });
 
 
