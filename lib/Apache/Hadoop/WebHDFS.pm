@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 package Apache::Hadoop::WebHDFS;
-our $VERSION = "0.04";      
+our $VERSION = "0.05";
 use warnings;
 use strict;
 use lib '.';
@@ -20,8 +20,8 @@ use File::Map 'map_file';
 
 sub redirect_ok {
     # need to allow 'put' to follow redirect on 307 requests, per RFC 2616 section 10.3.8
-    # redirect_ok is part of LWP::UserAgent which is subclassed 
-    # by WWW:Mech and finally Apache::Hadoop::WebHDFS. 
+    # redirect_ok is part of LWP::UserAgent which is subclassed
+    # by WWW:Mech and finally Apache::Hadoop::WebHDFS.
     return 1;    # always return true.
 }
 
@@ -32,7 +32,7 @@ sub new {
 	my $namenodeport= 50070;
 	my $authmethod = 'gssapi';                # 3 values: gssapi, unsecure, doas
 	my ($url, $urlpre, $urlauth, $user, $doas_user)  = undef;
-    
+
 	if ($_[0]->{'doas_user'}) { $doas_user =  $_[0]->{'doas_user'}; }
 	if ($_[0]->{'namenode'}) { $namenode =  $_[0]->{'namenode'}; }
 	if ($_[0]->{'namenodeport'}) { $namenodeport =  $_[0]->{'namenodeport'}; }
@@ -41,7 +41,7 @@ sub new {
 
     # stack_depth set to 0 so we don't blow-up ram by saving content with each request.
     my $self = $class-> SUPER::new( agent=>"Apache_Hadoop_WebHDFS",
-                                    stack_depth=>"0", 
+                                    stack_depth=>"0",
     );
 
 	$self->{'namenode'} = $namenode;
@@ -54,63 +54,63 @@ sub new {
 
 sub getdelegationtoken {
     # Fetch delegation token and store in object
-    my ( $self ) = shift; 
+    my ( $self ) = shift;
     my $token = '';
 	my $url = 'http://' . $self->{'namenode'} . ':' . $self->{'namenodeport'} . '/webhdfs/v1/?op=GETDELEGATIONTOKEN&renewer=' . $self->{'user'};
 	if ($self->{'authmethod'} eq 'gssapi') {
       $self->get( $url );
-      if ( $self->success() ) { 
+      if ( $self->success() ) {
         $token = substr ($self->content(), 23 , -3);
       }
       $self->{'webhdfstoken'}=$token;
 	} else {
 		carp "getdelgation token only valid when using GSSAPI" ;
 	}
-    return $self;    
+    return $self;
 }
 
 sub canceldelegationtoken {
     # Tell namenode to cancel existing delegation token and remove token from object
-    my ( $self ) = shift; 
+    my ( $self ) = shift;
 	if ($self->{'authmethod'} eq 'gssapi') { if ( $self->{'webhdfstoken'} )  {
    	   my $url = 'http://' . $self->{'namenode'} . ':' . $self->{'namenodeport'} . '/webhdfs/v1/?op=CANCELDELEGATIONTOKEN&token=' . $self->{'webhdfstoken'};
           $self->get( $url );
-          delete $self->{'webhdfstoken'} 
-       } 
+          delete $self->{'webhdfstoken'}
+       }
 	} else {
 		carp "canceldelgation token only valid when using GSSAPI";
 	}
-    return $self;    
+    return $self;
 }
 
 sub renewdelegationtoken {
     # Tell namenode to cancel existing delegation token and remove token from object
-    my ( $self ) = shift; 
+    my ( $self ) = shift;
 	if ($self->{'authmethod'} eq 'gssapi') {
        if ( $self->{'webhdfstoken'} )  {
    	   my $url = 'http://' . $self->{'namenode'} . ':' . $self->{'namenodeport'} . '/webhdfs/v1/?op=RENEWDELEGATION&token=' . $self->{'webhdfstoken'};
           $self->get( $url );
-          delete $self->{'webhdfstoken'} 
-       } 
+          delete $self->{'webhdfstoken'}
+       }
 	} else {
 		carp "canceldelgation token only valid when using GSSAPI";
 	}
-    return $self;    
+    return $self;
 }
 
 sub Open {
 	# curl -i -L "http://<HOST>:<PORT>/webhdfs/v1/<PATH>?op=OPEN[&offset=<LONG>][&length=<LONG>][&buffersize=<INT>]"
 
-    my $self = shift; 
+    my $self = shift;
     my ( $file, $offset, $length, $buffersize ) = undef;
     if ($_[0]->{'file'})       { $file       = $_[0]->{'file'};        } else { croak("No HDFS file given to open"); }
-    if ($_[0]->{'offset'})     { $offset     = $_[0]->{'offset'};      } 
-    if ($_[0]->{'length'})     { $length     = $_[0]->{'length'};      } 
-    if ($_[0]->{'buffersize'}) { $buffersize = $_[0]->{'buffersize'};  } 
+    if ($_[0]->{'offset'})     { $offset     = $_[0]->{'offset'};      }
+    if ($_[0]->{'length'})     { $length     = $_[0]->{'length'};      }
+    if ($_[0]->{'buffersize'}) { $buffersize = $_[0]->{'buffersize'};  }
 
     my $url;
-	if ($self->{'authmethod'} eq 'gssapi') { 
-       $url = 'http://' . $self->{'namenode'} . ':' . $self->{'namenodeport'} . '/webhdfs/v1' . $file . '?op=OPEN';	
+	if ($self->{'authmethod'} eq 'gssapi') {
+       $url = 'http://' . $self->{'namenode'} . ':' . $self->{'namenodeport'} . '/webhdfs/v1' . $file . '?op=OPEN';
 	} elsif ( $self->{'authmethod'} eq 'unsecure' ) {
        croak ("I need a 'user' value if authmethod is 'none'") if ( !$self->{'user'} ) ;
        $url = 'http://' . $self->{'namenode'} . ':' . $self->{'namenodeport'} . '/webhdfs/v1' . $file . '?op=OPEN' . '&user.name=' . $self->{'user'};
@@ -123,15 +123,15 @@ sub Open {
         $url = $url . "&delegation=" . $self->{'webhdfstoken'};
     }
 
-    if ($offset) { 
+    if ($offset) {
         $url = $url . "&offset=" . $offset;
     }
 
-    if ($length) { 
+    if ($length) {
         $url = $url . "&length=" . $length;
     }
 
-    if ($buffersize) { 
+    if ($buffersize) {
         $url = $url . "&buffersize=" . $buffersize;
     }
 
@@ -144,10 +144,10 @@ sub getfilestatus {
     my ( $self, $file ) = undef;
     $self = shift;
     if ($_[0]->{'file'}) { $file = $_[0]->{'file'}; } else { croak ("Need HDFS filename before listing status") ;}
-    
+
     my $url;
-	if ($self->{'authmethod'} eq 'gssapi') { 
-       $url = 'http://' . $self->{'namenode'} . ':' . $self->{'namenodeport'} . '/webhdfs/v1' . $file . '?op=GETFILESTATUS';	
+	if ($self->{'authmethod'} eq 'gssapi') {
+       $url = 'http://' . $self->{'namenode'} . ':' . $self->{'namenodeport'} . '/webhdfs/v1' . $file . '?op=GETFILESTATUS';
 	} elsif ( $self->{'authmethod'} eq 'unsecure' ) {
        croak ("I need a 'user' value if authmethod is 'none'") if ( !$self->{'user'} ) ;
        $url = 'http://' . $self->{'namenode'} . ':' . $self->{'namenodeport'} . '/webhdfs/v1' . $file . '?op=GETFILESTATUS' . '&user.name=' . $self->{'user'};
@@ -163,7 +163,7 @@ sub getfilestatus {
     return $self;
 }
 
-# Added as  LWP::UserAgent and WWW:Mechanize don't have delete 
+# Added as  LWP::UserAgent and WWW:Mechanize don't have delete
 # stolen from http://code.google.com/p/www-mechanize/issues/detail?id=219
 sub _SUPER_delete {
     require HTTP::Request::Common;
@@ -175,13 +175,13 @@ sub _SUPER_delete {
 sub Delete {
 	# curl -i -X DELETE "http://<host>:<port>/webhdfs/v1/<path>?op=DELETE[&recursive=<true|false>]"
     my ( $path, $recursive, $url ) = undef;
-    my $self = shift; 
+    my $self = shift;
 
     if ($_[0]->{'path'})       { $path       = $_[0]->{'path'};     } else { croak("No HDFS path given to delete"); }
-    if ($_[0]->{'recursive'})  { $recursive  = $_[0]->{'recursive'};} 
+    if ($_[0]->{'recursive'})  { $recursive  = $_[0]->{'recursive'};}
 
-	if ($self->{'authmethod'} eq 'gssapi') { 
-       $url = 'http://' . $self->{'namenode'} . ':' . $self->{'namenodeport'} . '/webhdfs/v1' . $path . '?op=DELETE';	
+	if ($self->{'authmethod'} eq 'gssapi') {
+       $url = 'http://' . $self->{'namenode'} . ':' . $self->{'namenodeport'} . '/webhdfs/v1' . $path . '?op=DELETE';
 	} elsif ( $self->{'authmethod'} eq 'unsecure' ) {
        croak ("I need a 'user' value if authmethod is 'none'") if ( !$self->{'user'} ) ;
        $url = 'http://' . $self->{'namenode'} . ':' . $self->{'namenodeport'} . '/webhdfs/v1' . $path . '?op=DELETE' . '&user.name=' . $self->{'user'};
@@ -210,20 +210,20 @@ sub create {
 	#                                         [&overwrite=<true|false>][&blocksize=<LONG>][&replication=<SHORT>]
 	#                                         [&permission=<OCTAL>][&buffersize=<INT>]"
     my ( $self, $content, $file_src, $file_dest, $perms, $overwrite, $blocksize, $replication, $buffersize ) = undef;
-    $self = shift; 
+    $self = shift;
     if ($_[0]->{'permission'})  { $perms       = $_[0]->{'permission'};  } else { $perms = '000'; }
-    if ($_[0]->{'overwrite'})   { $overwrite   = $_[0]->{'overwrite'};    } else { $overwrite='false'; } 
+    if ($_[0]->{'overwrite'})   { $overwrite   = $_[0]->{'overwrite'};    } else { $overwrite='false'; }
     if ($_[0]->{'srcfile'})     { $file_src    = $_[0]->{'srcfile'};      } else { croak ("Need local source file to copy to HDFS") ;}
     if ($_[0]->{'dstfile'})     { $file_dest   = $_[0]->{'dstfile'};      } else { croak ("Need HDFS destination before file create can happen") ;}
     if ($_[0]->{'blocksize'})   { $blocksize   = $_[0]->{'blocksize'};    }
     if ($_[0]->{'replication'}) { $replication = $_[0]->{'replication'};  }
     if ($_[0]->{'buffersize'})  { $buffersize  = $_[0]->{'buffersize'};   }
     my $url;
-	if ($self->{'authmethod'} eq 'gssapi') { 
-       $url = 'http://' . $self->{'namenode'} . ':' . $self->{'namenodeport'} . '/webhdfs/v1' . $file_dest . '?op=CREATE&permission=' . $perms . '&overwrite=' . $overwrite ;	
+	if ($self->{'authmethod'} eq 'gssapi') {
+       $url = 'http://' . $self->{'namenode'} . ':' . $self->{'namenodeport'} . '/webhdfs/v1' . $file_dest . '?op=CREATE&permission=' . $perms . '&overwrite=' . $overwrite ;
 	} elsif ( $self->{'authmethod'} eq 'unsecure' ) {
        croak ("I need a 'user' value if authmethod is 'none'") if ( !$self->{'user'} ) ;
-       $url = 'http://' . $self->{'namenode'} . ':' . $self->{'namenodeport'} . '/webhdfs/v1' . $file_dest . '?op=CREATE&permission=' . $perms . '&overwrite=' . $overwrite . '&user.name=' . $self->{'user'};	
+       $url = 'http://' . $self->{'namenode'} . ':' . $self->{'namenodeport'} . '/webhdfs/v1' . $file_dest . '?op=CREATE&permission=' . $perms . '&overwrite=' . $overwrite . '&user.name=' . $self->{'user'};
 	} elsif ( $self->{'authmethod'} eq 'doas' ) {
        croak ("I need a 'user' value if authmethod is 'doas'") if ( !$self->{'user'} ) ;
        croak ("I need a 'doas_user' value if authmethod is 'doas'") if ( !$self->{'doas_user'} ) ;
@@ -246,16 +246,16 @@ sub create {
 sub mkdirs {
 	# curl -i -X PUT "http://<HOST>:<PORT>/<PATH>?op=MKDIRS[&permission=<OCTAL>]"
     my ( $self, $perms, $path, $url ) = undef;
-    $self = shift; 
+    $self = shift;
     if ($_[0]->{'path'})       { $path = $_[0]->{'path'};           } else { croak ("I need a HDFS location to create directory"); }
-    if ($_[0]->{'permissions'}) { $perms = $_[0]->{'permissions'};  } else { $perms = '000'; }
+    if ($_[0]->{'permissons'}) { $perms = $_[0]->{'permisssions'};  } else { $perms = '000'; }
 
 
-	if ($self->{'authmethod'} eq 'gssapi') { 
+	if ($self->{'authmethod'} eq 'gssapi') {
        $url = 'http://' . $self->{'namenode'} . ':' . $self->{'namenodeport'} . '/webhdfs/v1' . $path . '?&op=MKDIRS&permission=' . $perms ;
 	} elsif ( $self->{'authmethod'} eq 'unsecure' ) {
        croak ("I need a 'user' value if authmethod is 'none'") if ( !$self->{'user'} ) ;
-       $url = 'http://' . $self->{'namenode'} . ':' . $self->{'namenodeport'} . '/webhdfs/v1' . $path . '?&op=MKDIRS&permission=' . $perms . '&user.name=' . $self->{'user'};	
+       $url = 'http://' . $self->{'namenode'} . ':' . $self->{'namenodeport'} . '/webhdfs/v1' . $path . '?&op=MKDIRS&permission=' . $perms . '&user.name=' . $self->{'user'};
 	} elsif ( $self->{'authmethod'} eq 'doas' ) {
        croak ("I need a 'user' value if authmethod is 'doas'") if ( !$self->{'user'} ) ;
        croak ("I need a 'doas_user' value if authmethod is 'doas'") if ( !$self->{'doas_user'} ) ;
@@ -272,10 +272,10 @@ sub mkdirs {
 sub getcontentsummary {
     # curl -i "http://<HOST>:<PORT>/webhdfs/v1/<PATH>?op=GETCONTENTSUMMARY"
     my ( $self, $dir, $url ) = undef;
-    $self = shift; 
+    $self = shift;
     if ($_[0]->{'directory'}) { $dir = $_[0]->{'directory'};  } else { croak ("I need a HDFS directory to return content summary"); }
 
-	if ($self->{'authmethod'} eq 'gssapi') { 
+	if ($self->{'authmethod'} eq 'gssapi') {
        $url = 'http://' . $self->{'namenode'} . ':' . $self->{'namenodeport'} . '/webhdfs/v1' . $dir . '?op=GETCONTENTSUMMARY';
 	} elsif ( $self->{'authmethod'} eq 'unsecure' ) {
        croak ("I need a 'user' value if authmethod is 'none'") if ( !$self->{'user'} ) ;
@@ -289,7 +289,7 @@ sub getcontentsummary {
     if ( $self->{'webhdfstoken'} ) {
         $url = $url . "&delegation=" . $self->{'webhdfstoken'};
     }
-     
+
     $self->get( $url );
     return $self;
 }
@@ -298,10 +298,10 @@ sub getcontentsummary {
 sub getfilechecksum {
     # get and return checksum for a file, curl -i  "http://<HOST>:<PORT>/webhdfs/v1/<PATH>?op=GETFILECHECKSUM"
     my ( $self, $file, $url ) = undef;
-    $self = shift; 
+    $self = shift;
     if ($_[0]->{'file'}) { $file = $_[0]->{'file'};  } else { croak ("I need a HDFS filename to get checksum"); }
 
-	if ($self->{'authmethod'} eq 'gssapi') { 
+	if ($self->{'authmethod'} eq 'gssapi') {
        $url = 'http://' . $self->{'namenode'} . ':' . $self->{'namenodeport'} . '/webhdfs/v1' . $file . '?op=GETFILECHECKSUM';
 	} elsif ( $self->{'authmethod'} eq 'unsecure' ) {
        croak ("I need a 'user' value if authmethod is 'none'") if ( !$self->{'user'} ) ;
@@ -315,17 +315,17 @@ sub getfilechecksum {
     if ( $self->{'webhdfstoken'} ) {
         $url = $url . "&delegation=" . $self->{'webhdfstoken'};
     }
-     
+
     $self->get( $url );
     return $self;
 }
 
 sub gethomedirectory {
     # curl -i "http://<HOST>:<PORT>/webhdfs/v1/?op=GETHOMEDIRECTORY"
-    my $self = shift; 
+    my $self = shift;
     my $url;
 
-	if ($self->{'authmethod'} eq 'gssapi') { 
+	if ($self->{'authmethod'} eq 'gssapi') {
        $url = 'http://' . $self->{'namenode'} . ':' . $self->{'namenodeport'} . '/webhdfs/v1?op=GETHOMEDIRECTORY';
 	} elsif ( $self->{'authmethod'} eq 'unsecure' ) {
        croak ("I need a 'user' value if authmethod is 'none'") if ( !$self->{'user'} ) ;
@@ -339,7 +339,7 @@ sub gethomedirectory {
     if ( $self->{'webhdfstoken'} ) {
         $url = $url . "&delegation=" . $self->{'webhdfstoken'};
     }
-     
+
     $self->put( $url );
     return $self;
 }
@@ -347,11 +347,11 @@ sub gethomedirectory {
 sub setpermission {
     # curl -i -X PUT "http://<HOST>:<PORT>/webhdfs/v1/<PATH>?op=SETPERMISSION[&permission=<OCTAL>]"
     my ( $self, $path, $url, $perms ) = undef;
-    $self = shift; 
+    $self = shift;
     if ($_[0]->{'path'}) { $path = $_[0]->{'path'};  } else { croak ("I need a HDFS path to set permmissions"); }
-    if ($_[0]->{'permissison'}) { $perms = $_[0]->{'permission'};  } 
+    if ($_[0]->{'permissison'}) { $perms = $_[0]->{'permisssion'};  }
 
-	if ($self->{'authmethod'} eq 'gssapi') { 
+	if ($self->{'authmethod'} eq 'gssapi') {
        $url = 'http://' . $self->{'namenode'} . ':' . $self->{'namenodeport'} . '/webhdfs/v1' . $path . '?op=SETPERMISSION';
 	} elsif ( $self->{'authmethod'} eq 'unsecure' ) {
        croak ("I need a 'user' value if authmethod is 'none'") if ( !$self->{'user'} ) ;
@@ -377,12 +377,12 @@ sub setpermission {
 sub setowner {
    # curl -i -X PUT "http://<HOST>:<PORT>/webhdfs/v1/<PATH>?op=SETOWNER[&owner=<USER>][&group=<GROUP>]"
     my ( $self, $path, $user, $group, $url ) = undef;
-    $self = shift; 
+    $self = shift;
     if ($_[0]->{'path'} )  { $path =  $_[0]->{'path'};  } else { croak ("I need a HDFS path before changing ownership"); }
-    if ($_[0]->{'user'} )  { $user =  $_[0]->{'user'};  } 
-    if ($_[0]->{'group'})  { $group = $_[0]->{'group'}; } 
+    if ($_[0]->{'user'} )  { $user =  $_[0]->{'user'};  }
+    if ($_[0]->{'group'})  { $group = $_[0]->{'group'}; }
 
-	if ($self->{'authmethod'} eq 'gssapi') { 
+	if ($self->{'authmethod'} eq 'gssapi') {
        $url = 'http://' . $self->{'namenode'} . ':' . $self->{'namenodeport'} . '/webhdfs/v1' . $path . '?op=SETOWNER';
 	} elsif ( $self->{'authmethod'} eq 'unsecure' ) {
        croak ("I need a 'user' value if authmethod is 'none'") if ( !$self->{'user'} ) ;
@@ -412,11 +412,11 @@ sub setowner {
 sub setreplication {
   #curl -i -X PUT "http://<HOST>:<PORT>/webhdfs/v1/<PATH>?op=SETREPLICATION[&replication=<SHORT>]"
     my ( $self, $path, $rep,$url ) = undef;
-    $self = shift; 
+    $self = shift;
     if ($_[0]->{'path'} )  { $path =  $_[0]->{'path'};  } else { croak ("I need a HDFS path before changing ownership"); }
-    if ($_[0]->{'replication'} )  { $rep =  $_[0]->{'replication'};  } 
+    if ($_[0]->{'replication'} )  { $rep =  $_[0]->{'replication'};  }
 
-	if ($self->{'authmethod'} eq 'gssapi') { 
+	if ($self->{'authmethod'} eq 'gssapi') {
        $url = 'http://' . $self->{'namenode'} . ':' . $self->{'namenodeport'} . '/webhdfs/v1' . $path . '?op=SETREPLICATION';
 	} elsif ( $self->{'authmethod'} eq 'unsecure' ) {
        croak ("I need a 'user' value if authmethod is 'none'") if ( !$self->{'user'} ) ;
@@ -442,14 +442,14 @@ sub setreplication {
 
 sub settimes {
    # curl -i -X PUT "http://<HOST>:<PORT>/webhdfs/v1/<PATH>?op=SETTIMES[&modificationtime=<TIME>][&accesstime=<TIME>]"
-   
-    my ( $url, $self, $path, $modtime, $accesstime ) = undef;
-    $self = shift; 
-    if ($_[0]->{'path'} )  { $path =  $_[0]->{'path'};  } else { croak ("I need a HDFS path before changing ownership"); }
-    if ($_[0]->{'modificationtime'} )  { $modtime =  $_[0]->{'modificationtime'};  } 
-    if ($_[0]->{'accesstime'} )  { $accesstime =  $_[0]->{'accesstime'};  } 
 
-	if ($self->{'authmethod'} eq 'gssapi') { 
+    my ( $url, $self, $path, $modtime, $accesstime ) = undef;
+    $self = shift;
+    if ($_[0]->{'path'} )  { $path =  $_[0]->{'path'};  } else { croak ("I need a HDFS path before changing ownership"); }
+    if ($_[0]->{'modificationtime'} )  { $modtime =  $_[0]->{'modificationtime'};  }
+    if ($_[0]->{'accesstime'} )  { $accesstime =  $_[0]->{'accesstime'};  }
+
+	if ($self->{'authmethod'} eq 'gssapi') {
        $url = 'http://' . $self->{'namenode'} . ':' . $self->{'namenodeport'} . '/webhdfs/v1' . $path . '?op=SETTIMES';
 	} elsif ( $self->{'authmethod'} eq 'unsecure' ) {
        croak ("I need a 'user' value if authmethod is 'none'") if ( !$self->{'user'} ) ;
@@ -481,10 +481,10 @@ sub settimes {
 sub liststatus {
     # list contents of directory, curl -i  "http://<HOST>:<PORT>/webhdfs/v1/<PATH>?op=LISTSTATUS"
     my ( $self, $path, $url ) = undef;
-    $self = shift; 
+    $self = shift;
     if ($_[0]->{'path'}) { $path = $_[0]->{'path'};  } else { croak ("I need a HDFS pathname to get status"); }
 
-	if ($self->{'authmethod'} eq 'gssapi') { 
+	if ($self->{'authmethod'} eq 'gssapi') {
        $url = 'http://' . $self->{'namenode'} . ':' . $self->{'namenodeport'} . '/webhdfs/v1' . $path . '?op=LISTSTATUS';
 	} elsif ( $self->{'authmethod'} eq 'unsecure' ) {
        croak ("I need a 'user' value if authmethod is 'none'") if ( !$self->{'user'} ) ;
@@ -507,16 +507,16 @@ sub rename {
 	#my $url = 'http://' . $self->{'namenode'} . ':' . $self->{'namenodeport'} . '/webhdfs/v1' . $src . '?op=RENAME&destination=' . $dst;
 
     my ( $self, $src, $dst ) = undef;
-    $self = shift; 
+    $self = shift;
     if ($_[0]->{'srcfile'})     { $src  = $_[0]->{'srcfile'}; } else { croak ("Need HDFS source before rename can happen") ;}
     if ($_[0]->{'dstfile'})     { $dst = $_[0]->{'dstfile'}; } else { croak ("Need HDFS destination before rename can happen") ;}
-	
+
     my $url;
-	if ($self->{'authmethod'} eq 'gssapi') { 
+	if ($self->{'authmethod'} eq 'gssapi') {
        $url = 'http://' . $self->{'namenode'} . ':' . $self->{'namenodeport'} . '/webhdfs/v1' . $src . '?op=RENAME&destination=' . $dst ;
 	} elsif ( $self->{'authmethod'} eq 'unsecure' ) {
        croak ("I need a 'user' value if authmethod is 'none'") if ( !$self->{'user'} ) ;
-       $url = 'http://' . $self->{'namenode'} . ':' . $self->{'namenodeport'} . '/webhdfs/v1' . $src . '?op=RENAME&destination=' . $dst . '&user.name=' . $self->{'user'};	
+       $url = 'http://' . $self->{'namenode'} . ':' . $self->{'namenodeport'} . '/webhdfs/v1' . $src . '?op=RENAME&destination=' . $dst . '&user.name=' . $self->{'user'};
 	} elsif ( $self->{'authmethod'} eq 'doas' ) {
        croak ("I need a 'user' value if authmethod is 'doas'") if ( !$self->{'user'} ) ;
        croak ("I need a 'doas_user' value if authmethod is 'doas'") if ( !$self->{'doas_user'} ) ;
@@ -529,6 +529,95 @@ sub rename {
     $self->put( $url );
 }
 
+sub createsnapshot {
+   # curl -i -X PUT "http://<HOST>:<PORT>/webhdfs/v1/<PATH>?op=CREATESNAPSHOT[&snapshotname=<SNAPSHOTNAME>]"
+
+    my ( $url, $self, $path, $snapshotname ) = undef;
+    $self = shift;
+    if ($_[0]->{'path'} )  { $path =  $_[0]->{'path'};  } else { croak ("I need a HDFS path for creating a snapshot"); }
+    if ($_[0]->{'snapshotname'} )  { $snapshotname =  $_[0]->{'snapshotname'};  }
+
+    $url = 'http://' . $self->{'namenode'} . ':' . $self->{'namenodeport'} . '/webhdfs/v1' . $path . '?op=CREATESNAPSHOT';
+
+  	if ( $self->{'authmethod'} eq 'unsecure' ) {
+         croak ("I need a 'user' value if authmethod is 'none'") if ( !$self->{'user'} ) ;
+         $url = $url .  '&user.name=' . $self->{'user'}; ;
+  	} elsif ( $self->{'authmethod'} eq 'doas' ) {
+         croak ("I need a 'user' value if authmethod is 'doas'") if ( !$self->{'user'} ) ;
+         croak ("I need a 'doas_user' value if authmethod is 'doas'") if ( !$self->{'doas_user'} ) ;
+         $url = $url . '&user.name=' . $self->{'user'} . '&doas=' . $self->{'doas_user'};
+  	}
+
+    if ($snapshotname) {
+        $url = $url . "&snapshotname=" . $snapshotname;
+    }
+
+    if ( $self->{'webhdfstoken'} ) {
+        $url = $url . "&delegation=" . $self->{'webhdfstoken'};
+    }
+
+    $self->put( $url );
+    return $self;
+
+}
+
+sub deletesnapshot {
+   # curl -i -X DELETE "http://<HOST>:<PORT>/webhdfs/v1/<PATH>?op=DELETESNAPSHOT&snapshotname=<SNAPSHOTNAME>]"
+
+    my ( $url, $self, $path, $snapshotname ) = undef;
+    $self = shift;
+    if ($_[0]->{'path'} )  { $path =  $_[0]->{'path'};  } else { croak ("I need a HDFS path for delete a snapshot"); }
+    if ($_[0]->{'snapshotname'} )  { $snapshotname =  $_[0]->{'snapshotname'};  } else { croak ("I need a snapshot name to delete"); }
+
+    $url = 'http://' . $self->{'namenode'} . ':' . $self->{'namenodeport'} . '/webhdfs/v1' . $path . '?op=DELETESNAPSHOT'. "&snapshotname=" . $snapshotname;
+
+
+  	if ( $self->{'authmethod'} eq 'unsecure' ) {
+         croak ("I need a 'user' value if authmethod is 'none'") if ( !$self->{'user'} ) ;
+         $url = $url .  '&user.name=' . $self->{'user'}; ;
+  	} elsif ( $self->{'authmethod'} eq 'doas' ) {
+         croak ("I need a 'user' value if authmethod is 'doas'") if ( !$self->{'user'} ) ;
+         croak ("I need a 'doas_user' value if authmethod is 'doas'") if ( !$self->{'doas_user'} ) ;
+         $url = $url . '&user.name=' . $self->{'user'} . '&doas=' . $self->{'doas_user'};
+  	}
+
+    if ( $self->{'webhdfstoken'} ) {
+        $url = $url . "&delegation=" . $self->{'webhdfstoken'};
+    }
+
+    $self->delete( $url );
+    return $self;
+
+}
+
+sub renamesnapshot {
+   # curl -i -X PUT "http://<HOST>:<PORT>/webhdfs/v1/<PATH>?op=RENAMESNAPSHOT&oldsnapshotname=<SNAPSHOTNAME>&snapshotname=<SNAPSHOTNAME>"
+
+    my ( $url, $self, $path, $snapshotname,  $oldsnapshotname) = undef;
+    $self = shift;
+    if ($_[0]->{'path'} )  { $path =  $_[0]->{'path'};  } else { croak ("I need a HDFS path for snapshot rename."); }
+    if ($_[0]->{'snapshotname'} )  { $snapshotname =  $_[0]->{'snapshotname'};  } else { croak ("I need a new snapshot name."); }
+    if ($_[0]->{'oldsnapshotname'} )  { $oldsnapshotname =  $_[0]->{'oldsnapshotname'};  } else { croak ("I need the old snapshotname."); }
+
+    $url = 'http://' . $self->{'namenode'} . ':' . $self->{'namenodeport'} . '/webhdfs/v1' . $path . '?op=RENAMESNAPSHOT' . "&snapshotname=" . $snapshotname . "&oldsnapshotname=" . $oldsnapshotname;
+
+  	if ( $self->{'authmethod'} eq 'unsecure' ) {
+         croak ("I need a 'user' value if authmethod is 'none'") if ( !$self->{'user'} ) ;
+         $url = $url.  '&user.name=' . $self->{'user'}; ;
+  	} elsif ( $self->{'authmethod'} eq 'doas' ) {
+         croak ("I need a 'user' value if authmethod is 'doas'") if ( !$self->{'user'} ) ;
+         croak ("I need a 'doas_user' value if authmethod is 'doas'") if ( !$self->{'doas_user'} ) ;
+         $url = 'http://' . $self->{'namenode'} . ':' . $self->{'namenodeport'} . '/webhdfs/v1' . $path . '?op=RENAMESNAPSHOT' . '&user.name=' . $self->{'user'} . '&doas=' . $self->{'doas_user'};
+  	}
+
+    if ( $self->{'webhdfstoken'} ) {
+        $url = $url . "&delegation=" . $self->{'webhdfstoken'};
+    }
+
+    $self->put( $url );
+    return $self;
+
+}
 
 =pod
 
@@ -542,43 +631,43 @@ Version 0.04
 
 =head1 SYNOPSIS
 
-Hadoop's WebHDFS API, is a rest interface to HDFS.  This module provides 
-a perl interface to the API, allowing one to both read and write files to 
-HDFS.  Because Apache::Hadoop::WebHDFS supports GSSAPI, it can be used to 
+Hadoop's WebHDFS API, is a rest interface to HDFS.  This module provides
+a perl interface to the API, allowing one to both read and write files to
+HDFS.  Because Apache::Hadoop::WebHDFS supports GSSAPI, it can be used to
 interface with secure Hadoop Clusters.  This module also supports WebHDFS connections
-with unsecure grids   
+with unsecure grids
 
-Apache::Hadoop::WebHDFS is a subclass of WWW:Mechanize, so one could 
-reference WWW::Mechanize methods if needed.  One will note that 
-WWW::Mechanize is a subclass of LWP, meaning it's possible to also reference 
+Apache::Hadoop::WebHDFS is a subclass of WWW:Mechanize, so one could
+reference WWW::Mechanize methods if needed.  One will note that
+WWW::Mechanize is a subclass of LWP, meaning it's possible to also reference
 LWP methods from Apache::Hadoop::WebHDFS.  For example to debug the GSSAPI
 calls used during the request, enable LWP::Debug by adding 'use LWP::Debug qw(+);' to your script.
 
-Content returned from WebHDFS is left in the native JSON format. Including your favorite JSON module like JSON::Any 
+Content returned from WebHDFS is left in the native JSON format. Including your favorite JSON module like JSON::Any
 will help with mangaging the JSON output.   To get access to the content stored in your Apache::Hadoop::WebHDFS object,
 use the methods provided by WWW::Mechanize, such as 'success', 'status', and 'content'.  Please see 'EXAMPLE' below
 for how this is used.
 
 
-=head1 METHODS 
+=head1 METHODS
 
 =over 3
 
 =item * new() - creates a new WebHDFS object. Required keys are 'user', 'namenode', 'namenodeport', and 'authmethod'.  Default values for 'namenode' and 'namenodeport' are listed below. The default value for authmethod is 'gssapi', which is used on grids where SPNEGO has been enabled.  The 'doasuser' is optional and intended to be used when proxying the WebHDFS request as another user.
-         
+
        my $hdfsclient =  new({ namenode     => "localhost",
                                namenodeport => "50070",
                                authmethod   => "gssapi|unsecure|doas",
                                user         => 'user1',
                                doasuser     => 'user2',
-                             });      
- 
+                             });
+
 
 =item * getdelegationtoken() - gets a delegation token from the namenode.  This token is stored within the WebHDFS object and automatically appended to each WebHDFS request.   Delegation tokens are used on grids with security enabled.
-    
+
        $hdfsclient->getdelegationtoken();
 
-=item * renewdelegationtoken()  - renews a delegation token from the namenode. 
+=item * renewdelegationtoken()  - renews a delegation token from the namenode.
 
        $hdfsclient->renewdelegationtoken();
 
@@ -589,7 +678,7 @@ for how this is used.
 =item * Open() - opens file on HDFS and returns it's content The only required value for Open() is 'file', all others are optional.  The values, 'offset', 'length', and 'buffersize', are meant to be sized in bytes.
 
         $hdfsclient->Open({ file=>'/path/to/my/hdfs/file',
-                            offset=>'1024',    
+                            offset=>'1024',
                             length=>'2048',
                             buffersize=>'1024',
                            });
@@ -605,24 +694,43 @@ for how this is used.
                                permission=>'644',
                               });
 
+=item * createsnapshot() - creates a snapshot of the given HDFS directory.  Required value is 'path' for the HDFS path.  'snapshotname' is an optional parameter that names the snapshot to be created.
+
+         $hdfsclient->snapshot({ path=>'/user/foo',
+                               snapshotname=>'mysnapshot',
+                             });
+
+=item * deletesnapshot() - deletes a given snapshot.  Required values are the 'path' for the HDFS path and 'snapshotname' for the snapshot to delete.
+
+         $hdfsclient->deletesnapshot({ path=>'/user/foo',
+                               snapshotname=>'mysnapshot',
+                             });
+
 =item * rename()  - renames a file on HDFS.  Required values for rename are 'srcfile' and 'dstfile', both of which represent HDFS filenames.
-  
+
          $hdfsclient->rename({ srcfile=>'/my/old/hdfs/file.txt',
                                dstfile=>'my/new/hdfs/file.txt',
                              });
 
+=item * renamesnapshot() - renames a given snapshot.  Required values are the 'path' for the HDFS path, 'oldsnapshotname' for the snapshot to rename, and 'snapshotname' for the new name to use.
+
+         $hdfsclient->deletesnapshot({ path           =>'/user/foo',
+                                       oldsnapshotname=>'mysnaphshot1',
+                                       snapshotname   =>'mysnapshot2',
+                             });
+
 =item * getfilestatus() - returns a json structure containing status of file or directory.  Required input is a HDFS path.
-   
+
          $hdfsclient->getfilestatus({ file=>'/path/to/my/hdfs/file.txt' });
 
 =item * liststatus() - returns a json structure of contents inside a directory.  Note the timestamps are java timestamps so divide by 1000 to convert to ctime before attempting to format time value.
-   
+
          $hdfsclient->liststatus({ path=>'/path/to/my/hdfs/directory' });
 
 =item *  mkdirs() - creates a directory on HDFS.  The only required input value is path.  Their is an optional input value named permissions and if not provided will default to '000'.
 
          $hdfsclient->mkdirs({ path=>'/path/to/my/hdfs/directory',
-                               permissions=>'755', 
+                               permissions=>'755',
           });
 
 =item * getfilechecksum() - gets HDFS checksum on file.  Note this is the crc32 checksum that HDFS uses to detect file corruption. It's not the checksum of the file itself.  The only required input value is 'file'.
@@ -654,10 +762,10 @@ for how this is used.
                                group=>'fifthgraders',
          });
 
-=item *  setpermission() - changes owner and group permissions on a file or directory on HDFS.  Path is required and permissions are optional.  
+=item *  setpermission() - changes owner and group permissions on a file or directory on HDFS.  Path is required and permissions are optional.
 
-         $hdfsclient->setpermission({ path=>'/path/to/my/hdfs/directory',
-                                       permission=>'640',
+         $hdfsclient->setpermisssion({ path=>'/path/to/my/hdfs/directory',
+                                       permisssion=>'640',
          });
 
 
@@ -683,7 +791,7 @@ for how this is used.
  Carp                   is used for various warnings and errors.
  WWW::Mechanize         is needed as this is a subclass.
  LWP::Debug             is required for debugging GSSAPI connections
- LWP::Authen::Negotiate is the magic sauce for working with secure hadoop clusters 
+ LWP::Authen::Negotiate is the magic sauce for working with secure hadoop clusters
  parent                 included with Perl 5.10.1 and newer or found on CPAN for older versions of perl
  File::Map              required for reading contents of files into mmap'ed memory space instead of perl's symbol table.
 
@@ -702,23 +810,23 @@ for how this is used.
                                                   authmethod      =>"gssapi",
                                                   user            =>$username,
                                                  });
-  $hdfsclient->liststatus( {path=>'/user/$username'} );        
+  $hdfsclient->liststatus( {path=>'/user/$username'} );
   if ($hdfsclient->success()) {
      print "Request SUCCESS: ", $hdfsclient->status() , "\n\n";
      print "Dumping content:\n";
      print Dumper $hdfsclient->content() ;
   } else {
      print "Request FAILED: ", $hdfsclient->status() , "\n";
-  } 
+  }
 
-	  
+
 =head1 AUTHOR
 
 Adam Faris, C<< <apache-hadoop-webhdfs at mekanix.org> >>
 
 =head1 BUGS
 
-  Please use github to report bugs and feature requests 
+  Please use github to report bugs and feature requests
   https://github.com/opsmekanix/Apache-Hadoop-WebHDFS/issues
 
 =head1 SUPPORT
@@ -749,9 +857,9 @@ L<http://search.cpan.org/dist/Apache-Hadoop-WebHDFS/>
 
 =head1 ACKNOWLEDGEMENTS
 
-I would like to acknowledge Andy Lester plus the numerous people who have 
-worked on WWW::Mechanize, Anchim Grolms and team for providing 
-LWP::Authen::Negotiate, and the contributors to LWP.  Thanks for providing 
+I would like to acknowledge Andy Lester plus the numerous people who have
+worked on WWW::Mechanize, Anchim Grolms and team for providing
+LWP::Authen::Negotiate, and the contributors to LWP.  Thanks for providing
 awesome modules.
 
 =head1 LICENSE AND COPYRIGHT
